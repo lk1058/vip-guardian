@@ -1,0 +1,2600 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="VIP Guardian">
+    <meta name="theme-color" content="#060913">
+    <link id="pwaManifestLink" rel="manifest" href="">
+    <link id="appleTouchIconLink" rel="apple-touch-icon" href="">
+    <title>VIP GUARDIAN: OVERDRIVE</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tone.js (신디사이저 효과음) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Orbitron:wght@600;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: radial-gradient(circle at 50% 0%, #172554 0%, #060913 65%, #02040a 100%);
+            color: #f8fafc;
+            height: 100dvh;
+            overflow: hidden;
+            touch-action: none;
+            overscroll-behavior: none;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .lobby-panel {
+            background: linear-gradient(160deg, rgba(15, 23, 42, 0.88) 0%, rgba(7, 11, 22, 0.94) 100%);
+            border: 1px solid rgba(56, 189, 248, 0.28);
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(12px);
+        }
+
+        .lobby-stage {
+            background: radial-gradient(circle at 50% 55%, rgba(56, 189, 248, 0.16) 0%, rgba(139, 92, 246, 0.08) 45%, rgba(2, 6, 23, 0.9) 85%);
+            border: 1px solid rgba(139, 92, 246, 0.35);
+            box-shadow: 0 0 40px rgba(56, 189, 248, 0.15), inset 0 0 30px rgba(2, 6, 23, 0.95);
+        }
+
+        .cyber-frame {
+            box-shadow: 0 0 35px rgba(14, 165, 233, 0.25), 0 0 80px rgba(139, 92, 246, 0.15), inset 0 0 20px rgba(2, 6, 23, 0.9);
+            border: 1px solid rgba(56, 189, 248, 0.35);
+        }
+
+        #joystickZone {
+            position: relative;
+            width: 96px;
+            height: 96px;
+            border-radius: 9999px;
+            background: radial-gradient(circle, rgba(15, 23, 42, 0.55) 0%, rgba(2, 6, 23, 0.85) 100%);
+            border: 2px solid rgba(56, 189, 248, 0.45);
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.25), inset 0 0 12px rgba(56, 189, 248, 0.2);
+            touch-action: none;
+        }
+
+        #joystickKnob {
+            position: absolute;
+            width: 38px;
+            height: 38px;
+            border-radius: 9999px;
+            background: radial-gradient(circle at 30% 30%, #7dd3fc, #0284c7);
+            border: 2px solid #e0f2fe;
+            box-shadow: 0 0 15px #38bdf8;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        .cyber-btn {
+            transition: all 0.14s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+        }
+
+        .cyber-btn:hover:not(:disabled) {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+        }
+
+        .cyber-btn:active:not(:disabled) {
+            transform: scale(0.95);
+        }
+
+        .cyber-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            filter: grayscale(0.7);
+        }
+
+        .grade-common { border-color: #64748b; background: linear-gradient(145deg, rgba(30,41,59,0.9), rgba(15,23,42,0.95)); }
+        .grade-rare { border-color: #38bdf8; background: linear-gradient(145deg, rgba(12,74,110,0.9), rgba(15,23,42,0.95)); box-shadow: 0 0 15px rgba(56,189,248,0.3); }
+        .grade-epic { border-color: #c084fc; background: linear-gradient(145deg, rgba(88,28,135,0.9), rgba(15,23,42,0.95)); box-shadow: 0 0 18px rgba(192,132,252,0.4); }
+        .grade-legend { border-color: #facc15; background: linear-gradient(145deg, rgba(113,63,18,0.9), rgba(15,23,42,0.95)); box-shadow: 0 0 22px rgba(250,204,21,0.5); }
+        .grade-mythic { border-color: #f43f5e; background: linear-gradient(145deg, rgba(136,19,55,0.95), rgba(15,23,42,0.98)); box-shadow: 0 0 26px rgba(244,63,94,0.7); }
+
+        @keyframes pulseGlow {
+            0%, 100% { filter: brightness(1); transform: scale(1); }
+            50% { filter: brightness(1.25); transform: scale(1.03); }
+        }
+        .overdrive-ready {
+            animation: pulseGlow 0.9s infinite;
+        }
+
+        .custom-opt.active {
+            border-color: #38bdf8;
+            background-color: rgba(56, 189, 248, 0.25);
+            box-shadow: 0 0 14px rgba(56, 189, 248, 0.5);
+        }
+
+        .bg-cyber-grid {
+            background-size: 40px 40px;
+            background-image:
+                linear-gradient(to right, rgba(56, 189, 248, 0.06) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(56, 189, 248, 0.06) 1px, transparent 1px);
+        }
+    </style>
+</head>
+<body class="w-screen h-[100dvh] flex items-center justify-center bg-cyber-grid overflow-hidden">
+
+    <!-- ===================================================================== -->
+    <!-- 1. 독립 풀스크린 메인 홈 화면 (HOME LOBBY SCREEN) -->
+    <!-- ===================================================================== -->
+    <section id="homeLobbyScreen" class="w-full h-full max-w-5xl mx-auto p-2.5 sm:p-5 flex flex-col justify-between overflow-y-auto" style="touch-action: pan-y;">
+        
+        <header class="lobby-panel rounded-2xl px-4 py-3 flex items-center justify-between gap-3 shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-400 via-indigo-500 to-purple-600 flex items-center justify-center text-xl shadow-lg">
+                    👑
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-base sm:text-xl font-black font-orbitron tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-sky-300 via-white to-purple-300">
+                            VIP GUARDIAN
+                        </h1>
+                        <span class="hidden sm:inline-block text-[10px] font-orbitron font-bold bg-sky-500/20 text-sky-300 border border-sky-400/40 px-2 py-0.5 rounded-full">
+                            SEASON 01 · OVERDRIVE
+                        </span>
+                    </div>
+                    <p class="text-[11px] text-slate-400">100,000명의 정예 경호원과 함께하는 10단계 라인 디펜스</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 sm:gap-3">
+                <div class="hidden sm:flex flex-col items-end bg-slate-950/90 border border-slate-800 rounded-xl px-2.5 py-1.5">
+                    <span class="text-[9px] font-orbitron text-slate-400 font-bold">CLOUD SYNC</span>
+                    <span id="cloudStatusBadge" class="text-[11px] font-bold text-sky-400">⏳ 준비 중...</span>
+                </div>
+                <div class="bg-slate-950/90 border border-amber-500/40 rounded-xl px-3 py-1.5 text-right">
+                    <span class="block text-[9px] font-orbitron text-amber-400/80 font-bold">BEST RECORD</span>
+                    <span id="lobbyBestTime" class="text-xs sm:text-sm font-black font-orbitron text-amber-300">00:00 (LV.1)</span>
+                </div>
+                <button id="saveProfileBtn" class="cyber-btn bg-emerald-600/90 hover:bg-emerald-500 border border-emerald-400/50 px-3 py-2.5 rounded-xl text-xs font-black text-white cursor-pointer" title="캐릭터 및 기록 저장">
+                    💾 저장
+                </button>
+                <button id="installAppBtn" class="cyber-btn bg-indigo-600/90 hover:bg-indigo-500 border border-indigo-400/50 px-3 py-2.5 rounded-xl text-xs font-black text-white cursor-pointer" title="스마트폰 앱으로 설치">
+                    📲 앱설치
+                </button>
+                <button id="lobbySoundBtn" class="lobby-panel hover:bg-slate-800 p-2.5 rounded-xl text-sm cursor-pointer" title="효과음 토글">🔊</button>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 my-3 flex-1 min-h-0 items-stretch">
+            
+            <!-- [좌측 패널] VIP 외형 커스터마이징 덱 -->
+            <div class="lg:col-span-4 lobby-panel rounded-2xl p-4 flex flex-col justify-between gap-3">
+                <div>
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
+                        <span class="text-xs font-orbitron font-black text-sky-400">01 // AVATAR DESIGN</span>
+                        <button type="button" id="randomDesignBtn" class="cyber-btn bg-slate-800 hover:bg-slate-700 border border-slate-600 text-[11px] font-bold text-amber-300 px-2.5 py-1 rounded-lg cursor-pointer">
+                            🎲 랜덤 디자인
+                        </button>
+                    </div>
+
+                    <div class="mb-2.5">
+                        <label class="block text-[11px] text-slate-400 font-bold mb-1">슈트 & 아머 스타일</label>
+                        <div id="bodyOptions" class="grid grid-cols-4 gap-1.5">
+                            <button type="button" data-body="suit" class="custom-opt active py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs font-bold cursor-pointer">🤵 정장</button>
+                            <button type="button" data-body="cyber" class="custom-opt py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs font-bold cursor-pointer">🦾 아머</button>
+                            <button type="button" data-body="coat" class="custom-opt py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs font-bold cursor-pointer">🧥 코트</button>
+                            <button type="button" data-body="ninja" class="custom-opt py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs font-bold cursor-pointer">🥷 닌자</button>
+                        </div>
+                    </div>
+
+                    <div class="mb-2.5">
+                        <label class="block text-[11px] text-slate-400 font-bold mb-1">헤어 스타일</label>
+                        <div id="hairOptions" class="grid grid-cols-5 gap-1.5">
+                            <button type="button" data-hair="spiky" class="custom-opt active py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-[11px] font-bold cursor-pointer">⚡샤기</button>
+                            <button type="button" data-hair="bob" class="custom-opt py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-[11px] font-bold cursor-pointer">💇단발</button>
+                            <button type="button" data-hair="ponytail" class="custom-opt py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-[11px] font-bold cursor-pointer">🎀포니</button>
+                            <button type="button" data-hair="mohawk" class="custom-opt py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-[11px] font-bold cursor-pointer">🔥모히칸</button>
+                            <button type="button" data-hair="sleek" class="custom-opt py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-[11px] font-bold cursor-pointer">🕶️올백</button>
+                        </div>
+                    </div>
+
+                    <div class="mb-2.5">
+                        <label class="block text-[11px] text-slate-400 font-bold mb-1">헤드 기어 & 등 장식</label>
+                        <div class="grid grid-cols-2 gap-1.5">
+                            <div id="hatOptions" class="grid grid-cols-4 gap-1">
+                                <button type="button" data-hat="crown" class="custom-opt active py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs cursor-pointer" title="왕관">👑</button>
+                                <button type="button" data-hat="horns" class="custom-opt py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs cursor-pointer" title="악마뿔">😈</button>
+                                <button type="button" data-hat="ears" class="custom-opt py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs cursor-pointer" title="고양이귀">🐱</button>
+                                <button type="button" data-hat="none" class="custom-opt py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-[10px] text-slate-400 cursor-pointer" title="없음">✕</button>
+                            </div>
+                            <div id="backOptions" class="grid grid-cols-4 gap-1">
+                                <button type="button" data-back="cape" class="custom-opt active py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs cursor-pointer" title="망토">🦸</button>
+                                <button type="button" data-back="wings" class="custom-opt py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs cursor-pointer" title="네온날개">🪽</button>
+                                <button type="button" data-back="jet" class="custom-opt py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs cursor-pointer" title="제트팩">🚀</button>
+                                <button type="button" data-back="none" class="custom-opt py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-[10px] text-slate-400 cursor-pointer" title="없음">✕</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="block text-[11px] text-slate-400 font-bold mb-1">얼굴 표정 & 바이저</label>
+                        <div id="faceOptions" class="grid grid-cols-5 gap-1.5">
+                            <button type="button" data-face="shades" class="custom-opt active py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs font-bold cursor-pointer">🕶️</button>
+                            <button type="button" data-face="visor" class="custom-opt py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs font-bold cursor-pointer">🤖</button>
+                            <button type="button" data-face="cute" class="custom-opt py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs font-bold cursor-pointer">😊</button>
+                            <button type="button" data-face="angry" class="custom-opt py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs font-bold cursor-pointer">😠</button>
+                            <button type="button" data-face="cat" class="custom-opt py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs font-bold cursor-pointer">😺</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800">
+                    <div>
+                        <label class="block text-[11px] text-slate-400 font-bold mb-1">슈트 / 헤어·오라 색</label>
+                        <div class="flex items-center justify-around bg-slate-950 border border-slate-700 rounded-xl px-2 py-1.5">
+                            <input id="bodyColorInput" type="color" value="#38bdf8" class="w-7 h-6 bg-transparent border-0 cursor-pointer rounded" title="슈트 색상">
+                            <span class="text-slate-600 font-bold">/</span>
+                            <input id="auraColorInput" type="color" value="#facc15" class="w-7 h-6 bg-transparent border-0 cursor-pointer rounded" title="헤어 및 오라 색상">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] text-slate-400 font-bold mb-1">근접 검기 & 이동 궤적</label>
+                        <select id="trailSelect" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-2 py-2 text-xs text-sky-300 font-bold outline-none cursor-pointer">
+                            <option value="ghost">👻 홀로그램 잔상</option>
+                            <option value="spark">✨ 별빛 스파크</option>
+                            <option value="flame">🔥 네온 불꽃</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- [중앙 패널] 대형 홀로그램 캐릭터 쇼케이스 무대 -->
+            <div class="lg:col-span-4 lobby-stage rounded-2xl p-4 flex flex-col items-center justify-between relative overflow-hidden">
+                <div class="w-full flex items-center justify-between z-10">
+                    <span class="text-[10px] font-orbitron font-bold text-purple-300 bg-purple-500/20 border border-purple-400/40 px-2.5 py-0.5 rounded-full">
+                        HOLO-STAGE LIVE
+                    </span>
+                    <span id="stageTraitBadge" class="text-[11px] font-bold text-amber-300">💰 초기자금 120</span>
+                </div>
+
+                <div class="relative my-2 flex items-center justify-center">
+                    <canvas id="avatarPreviewCanvas" width="220" height="220" class="w-44 h-44 sm:w-52 sm:h-52"></canvas>
+                </div>
+
+                <div class="w-full max-w-xs z-10 text-center">
+                    <label class="block text-[10px] font-orbitron text-slate-400 mb-1">VIP CALLSIGN (클릭하여 이름 변경)</label>
+                    <input id="vipNameInput" type="text" maxlength="10" value="VIP 회장님" placeholder="캐릭터 이름 입력"
+                        class="w-full text-center bg-slate-950/90 border-2 border-sky-500/50 focus:border-sky-400 rounded-xl px-3 py-2 text-sm sm:text-base text-white font-black outline-none shadow-lg">
+                </div>
+            </div>
+
+            <!-- [우측 패널] 출전 특성 & 레벨 선택 & 출격 버튼 -->
+            <div class="lg:col-span-4 lobby-panel rounded-2xl p-4 flex flex-col justify-between gap-3">
+                <div>
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
+                        <span class="text-xs font-orbitron font-black text-purple-400">02 // COMBAT LOADOUT</span>
+                        <span class="text-[11px] text-slate-400">패시브 & 레벨</span>
+                    </div>
+
+                    <div id="traitCards" class="grid grid-cols-2 gap-2 mb-3">
+                        <button type="button" data-trait="rich" class="custom-opt active p-2.5 rounded-xl bg-slate-950 border border-slate-700 text-left cursor-pointer">
+                            <div class="text-sm font-black text-amber-300">💰 재벌가</div>
+                            <div class="text-[10px] text-slate-400 mt-0.5">시작 크레딧 120 지급</div>
+                        </button>
+                        <button type="button" data-trait="athlete" class="custom-opt p-2.5 rounded-xl bg-slate-950 border border-slate-700 text-left cursor-pointer">
+                            <div class="text-sm font-black text-sky-300">👟 부스터</div>
+                            <div class="text-[10px] text-slate-400 mt-0.5">기본 이동속도 +18%</div>
+                        </button>
+                        <button type="button" data-trait="tank" class="custom-opt p-2.5 rounded-xl bg-slate-950 border border-slate-700 text-left cursor-pointer">
+                            <div class="text-sm font-black text-emerald-300">❤️ 나노아머</div>
+                            <div class="text-[10px] text-slate-400 mt-0.5">최대 체력 135로 증가</div>
+                        </button>
+                        <button type="button" data-trait="magnet" class="custom-opt p-2.5 rounded-xl bg-slate-950 border border-slate-700 text-left cursor-pointer">
+                            <div class="text-sm font-black text-purple-300">🧲 중력장</div>
+                            <div class="text-[10px] text-slate-400 mt-0.5">크레딧 흡수 범위 +60%</div>
+                        </button>
+                    </div>
+
+                    <div class="mb-3 bg-slate-950/90 border border-slate-800 rounded-xl p-2.5">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="text-[11px] font-bold text-slate-300">🎯 출격 레벨 선택 (LV.1 ~ LV.10)</span>
+                            <span id="lobbyLevelDiffBadge" class="text-[10px] font-orbitron font-bold text-emerald-400">LV.01 · EASY</span>
+                        </div>
+                        <div id="levelSelectGrid" class="grid grid-cols-5 gap-1">
+                            <button type="button" data-lvl="1" class="lvl-opt custom-opt active py-1 rounded-lg bg-slate-900 border border-slate-700 text-[11px] font-orbitron font-bold text-emerald-300 cursor-pointer">1</button>
+                            <button type="button" data-lvl="2" class="lvl-opt custom-opt py-1 rounded-lg bg-slate-900 border border-slate-700 text-[11px] font-orbitron font-bold text-emerald-300 cursor-pointer">2</button>
+                            <button type="button" data-lvl="3" class="lvl-opt custom-opt py-1 rounded-lg bg-slate-900 border border-slate-700 text-[11px] font-orbitron font-bold text-sky-300 cursor-pointer">3</button>
+                            <button type="button" data-lvl="4" class="lvl-opt custom-opt py-1 rounded-lg bg-slate-900 border border-slate-700 text-[11px] font-orbitron font-bold text-sky-300 cursor-pointer">4</button>
+                            <button type="button" data-lvl="5" class="lvl-opt custom-opt py-1 rounded-lg bg-slate-900 border border-slate-700 text-[11px] font-orbitron font-bold text-amber-300 cursor-pointer">5</button>
+                            <button type="button" data-lvl="6" class="lvl-opt custom-opt py-1 rounded-lg bg-slate-900 border border-slate-700 text-[11px] font-orbitron font-bold text-amber-300 cursor-pointer">6</button>
+                            <button type="button" data-lvl="7" class="lvl-opt custom-opt py-1 rounded-lg bg-slate-900 border border-slate-700 text-[11px] font-orbitron font-bold text-orange-400 cursor-pointer">7</button>
+                            <button type="button" data-lvl="8" class="lvl-opt custom-opt py-1 rounded-lg bg-slate-900 border border-slate-700 text-[11px] font-orbitron font-bold text-orange-400 cursor-pointer">8</button>
+                            <button type="button" data-lvl="9" class="lvl-opt custom-opt py-1 rounded-lg bg-slate-900 border border-slate-700 text-[11px] font-orbitron font-bold text-rose-400 cursor-pointer">9</button>
+                            <button type="button" data-lvl="10" class="lvl-opt custom-opt py-1 rounded-lg bg-slate-900 border border-slate-700 text-[11px] font-orbitron font-bold text-rose-500 cursor-pointer">10</button>
+                        </div>
+                        <p id="lobbyLevelDesc" class="text-[10px] text-slate-400 mt-1.5">입문 구역: 적의 이동속도가 느리고 근접전만으로 여유롭게 격파 가능</p>
+                    </div>
+
+                    <div id="lastResultCard" class="hidden bg-slate-950/95 border border-rose-500/40 rounded-xl p-2.5 mb-2">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-[10px] font-orbitron font-bold text-rose-400">LAST MISSION REPORT</span>
+                            <span id="finalLevelText" class="text-[10px] font-orbitron font-bold text-sky-400">LV.01</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-1.5 text-center">
+                            <div>
+                                <span class="block text-[9px] text-slate-400">생존 시간</span>
+                                <span id="finalTimeText" class="text-xs font-black font-orbitron text-white">00:00</span>
+                            </div>
+                            <div>
+                                <span class="block text-[9px] text-slate-400">격파 수</span>
+                                <span id="finalKillsText" class="text-xs font-black font-orbitron text-rose-400">0</span>
+                            </div>
+                            <div>
+                                <span class="block text-[9px] text-slate-400">최대 콤보</span>
+                                <span id="finalComboText" class="text-xs font-black font-orbitron text-amber-400">x0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <div class="bg-slate-950/70 border border-slate-800 rounded-xl px-3 py-2 text-[11px] text-slate-300 flex items-center justify-between">
+                        <span>⚔️ 근접 참격 + 🔫 총기 뽑기</span>
+                        <span class="font-bold text-rose-400">우측 단일 라인 침공!</span>
+            <span class="font-orbitron text-[10px] text-slate-500">VER 3.3 · MOBILE PWA &amp; APP READY</span>
+        </footer>
+
+        <!-- 스마트폰 앱 설치 안내 모달 -->
+        <div id="installGuideModal" class="hidden fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 z-50">
+            <div class="lobby-panel max-w-sm w-full rounded-2xl p-5 text-center border border-sky-400/50">
+                <div class="text-4xl mb-2">📱✨</div>
+                <h3 class="text-lg font-black text-white mb-1">스마트폰 홈 화면에 앱 설치</h3>
+                <p id="installGuideText" class="text-xs text-slate-300 leading-relaxed mb-4">
+                    휴대폰 인터넷(크롬/사파리)으로 이 파일을 연 뒤, 브라우저 메뉴(⋮ 또는 공유 버튼)에서 <strong class="text-amber-300">[홈 화면에 추가]</strong>를 누르면 진짜 게임 앱 아이콘이 생겨요!
+                </p>
+                <button id="closeInstallGuideBtn" class="cyber-btn w-full py-2.5 rounded-xl bg-sky-500 text-slate-950 font-black text-sm cursor-pointer">
+                    확인했어요!
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- 2. 인게임 전투 화면 (IN-GAME ARENA SCREEN) -->
+    <!-- ===================================================================== -->
+    <section id="battleScreen" class="hidden w-full max-w-[460px] h-full sm:max-h-[720px] p-2 pb-3 flex flex-col justify-between">
+
+        <header class="w-full bg-slate-950/90 border border-slate-800/90 rounded-2xl px-3 py-2 flex items-center justify-between gap-2 z-10 backdrop-blur-md shrink-0 shadow-lg">
+            <!-- VIP 체력 -->
+            <div class="flex-1 max-w-[155px]">
+                <div class="flex justify-between items-center text-xs font-black mb-1">
+                    <span id="hudVipName" class="text-sky-400 truncate">👑 VIP</span>
+                    <span id="hpText" class="font-orbitron text-[11px] text-slate-200 ml-1 shrink-0">100/100</span>
+                </div>
+                <div class="w-full h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-700/80">
+                    <div id="hpBar" class="h-full bg-gradient-to-r from-rose-500 via-pink-500 to-emerald-400 transition-all duration-150" style="width: 100%;"></div>
+                </div>
+            </div>
+
+            <!-- 중앙 레벨 & 진행도 & 타이머 -->
+            <div class="text-center">
+                <div class="flex items-center justify-center gap-1.5">
+                    <span id="hudLevelBadge" class="text-[10px] font-orbitron font-black px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">LV.01</span>
+                    <span id="timerDisplay" class="text-sm font-black font-orbitron text-white tracking-wider leading-none">00:00</span>
+                </div>
+                <div class="w-24 h-1.5 bg-slate-900 rounded-full overflow-hidden border border-slate-700/80 mx-auto mt-1">
+                    <div id="levelProgressBar" class="h-full bg-gradient-to-r from-sky-400 to-purple-400 transition-all duration-150" style="width: 0%;"></div>
+                </div>
+                <div id="comboDisplay" class="text-[9px] font-orbitron font-bold text-amber-400 mt-0.5">COMBO x0</div>
+            </div>
+
+            <!-- 코인 & 홈 복귀 -->
+            <div class="flex items-center gap-1.5">
+                <div class="bg-slate-900/90 border border-amber-500/40 px-2 py-1 rounded-xl text-right">
+                    <span class="block text-[8px] text-amber-400/80 font-bold">CREDITS</span>
+                    <span id="coinDisplay" class="text-xs sm:text-sm font-black font-orbitron text-amber-400 leading-none">80</span>
+                </div>
+                <button id="soundToggleBtn" class="bg-slate-900 hover:bg-slate-800 p-2 rounded-xl text-xs border border-slate-700 cursor-pointer" title="효과음 토글">🔊</button>
+                <button id="homeReturnBtn" class="bg-slate-900 hover:bg-rose-950 p-2 rounded-xl text-xs border border-slate-700 text-slate-300 cursor-pointer" title="홈 로비로 복귀">🏠</button>
+            </div>
+        </header>
+
+        <main id="canvasContainer" class="relative flex-1 w-full my-1.5 rounded-2xl overflow-hidden cyber-frame bg-[#050811] min-h-0">
+            <canvas id="gameCanvas" class="w-full h-full block"></canvas>
+
+            <div class="absolute top-2.5 inset-x-0 flex justify-center pointer-events-none z-10 gap-2">
+                <span id="synergyBadge" class="hidden px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-400 text-[10px] font-black text-amber-300 backdrop-blur-sm">
+                    ⚡ HYPER SYNERGY ACTIVE
+                </span>
+                <span id="feverBadge" class="hidden px-2.5 py-0.5 rounded-full bg-rose-500/25 border border-rose-500 text-[10px] font-black text-rose-300 backdrop-blur-sm animate-pulse">
+                    🔥 OVERHEAT (2X CREDITS)
+                </span>
+            </div>
+
+            <div class="absolute bottom-3 left-3 z-10 flex flex-col items-center opacity-85 hover:opacity-100 transition-opacity">
+                <div id="joystickZone" aria-label="이동 스틱">
+                    <div id="joystickKnob"></div>
+                </div>
+            </div>
+
+            <div class="absolute bottom-3 right-3 z-10">
+                <button id="overdriveBtn" disabled class="cyber-btn relative w-[72px] h-[72px] rounded-full bg-slate-900/90 border-2 border-purple-500/50 flex flex-col items-center justify-center overflow-hidden cursor-pointer">
+                    <div id="overdriveFill" class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-rose-600 via-purple-600 to-sky-400 opacity-80 transition-all duration-150" style="height: 0%;"></div>
+                    <span class="relative z-10 text-xl leading-none">💥</span>
+                    <span id="overdriveText" class="relative z-10 text-[10px] font-orbitron font-black text-white mt-0.5">0%</span>
+                </button>
+            </div>
+
+            <div id="replaceModal" class="hidden absolute inset-0 bg-slate-950/92 backdrop-blur-md flex flex-col items-center justify-center p-4 z-20">
+                <span class="text-[10px] font-orbitron font-bold text-amber-400 bg-amber-500/10 border border-amber-500/40 px-3 py-0.5 rounded-full mb-1.5">MAX SQUAD (2/2)</span>
+                <h3 class="text-base sm:text-lg font-black text-white mb-0.5">신규 정예 경호원 영입!</h3>
+                <p class="text-[11px] text-slate-400 mb-3">교체할 슬롯을 선택하거나 계약을 파기(환급)하세요.</p>
+
+                <div id="newRecruitCard" class="w-full max-w-xs border-2 rounded-xl p-2.5 mb-3 text-left"></div>
+
+                <div class="grid grid-cols-2 gap-2 w-full max-w-sm mb-3">
+                    <button id="replaceSlot0Btn" class="border-2 rounded-xl p-2 text-left hover:brightness-110 transition cursor-pointer"></button>
+                    <button id="replaceSlot1Btn" class="border-2 rounded-xl p-2 text-left hover:brightness-110 transition cursor-pointer"></button>
+                </div>
+
+                <button id="discardRecruitBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-4 py-2 rounded-xl border border-slate-600 cursor-pointer">
+                    영입 포기 (+<span id="refundAmount">30</span> 크레딧 환급)
+                </button>
+            </div>
+        </main>
+
+        <footer class="w-full bg-slate-950/95 border border-slate-800 rounded-2xl p-2 flex items-center justify-between gap-2 z-10 shrink-0 shadow-xl">
+            <div class="flex-1 flex flex-col gap-1 min-w-0">
+                <div class="flex items-center justify-between px-1">
+                    <span class="text-[10px] font-black text-slate-300">SQUAD (<span id="slotCountText">0</span>/2)</span>
+                    <span id="vipWeaponBadge" class="text-[10px] text-cyan-300 font-bold truncate">🔫 기본 권총</span>
+                </div>
+                <div class="grid grid-cols-2 gap-1.5 h-20">
+                    <div id="guardSlot0" class="border-2 border-dashed border-slate-700 rounded-xl p-2 flex flex-col justify-center items-center bg-slate-900/60"></div>
+                    <div id="guardSlot1" class="border-2 border-dashed border-slate-700 rounded-xl p-2 flex flex-col justify-center items-center bg-slate-900/60"></div>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-1.5 shrink-0 w-32">
+                <button id="summonBtn" class="cyber-btn bg-gradient-to-b from-amber-400 to-orange-600 text-slate-950 font-black rounded-xl py-1.5 px-2.5 flex items-center justify-between cursor-pointer">
+                    <span class="text-xs">🎲 경호원</span>
+                    <span class="text-[10px] font-orbitron font-extrabold bg-slate-950/20 px-1.5 py-0.5 rounded-full">
+                        💰<span id="summonCostText">40</span>
+                    </span>
+                </button>
+
+                <button id="gunDrawBtn" class="cyber-btn bg-gradient-to-b from-emerald-400 to-teal-700 text-slate-950 font-black rounded-xl py-1.5 px-2.5 flex items-center justify-between cursor-pointer">
+                    <span class="text-xs">🔫 총기뽑기</span>
+                    <span class="text-[10px] font-orbitron font-extrabold bg-slate-950/20 px-1.5 py-0.5 rounded-full">
+                        💰<span id="gunCostText">35</span>
+                    </span>
+                </button>
+
+                <button id="dashBtn" class="cyber-btn relative overflow-hidden bg-gradient-to-b from-sky-400 to-blue-700 text-white font-black rounded-xl py-1.5 px-2.5 flex items-center justify-between cursor-pointer">
+                    <div id="dashCooldownOverlay" class="absolute inset-0 bg-slate-950/80 origin-bottom transition-transform duration-75" style="transform: scaleY(0);"></div>
+                    <span class="relative z-10 text-xs">💨 대시</span>
+                    <span id="dashStatusText" class="relative z-10 text-[10px] font-orbitron">READY</span>
+                </button>
+            </div>
+        </footer>
+    </section>
+
+    <script>
+        function initGameApp() {
+            // ==========================================
+            // 1. DOM 요소 참조
+            // ==========================================
+            const homeLobbyScreen = document.getElementById('homeLobbyScreen');
+            const battleScreen = document.getElementById('battleScreen');
+            const cloudStatusBadge = document.getElementById('cloudStatusBadge');
+            const saveProfileBtn = document.getElementById('saveProfileBtn');
+            const installAppBtn = document.getElementById('installAppBtn');
+            const installGuideModal = document.getElementById('installGuideModal');
+            const closeInstallGuideBtn = document.getElementById('closeInstallGuideBtn');
+            const lobbyBestTime = document.getElementById('lobbyBestTime');
+            const lobbySoundBtn = document.getElementById('lobbySoundBtn');
+            const homeReturnBtn = document.getElementById('homeReturnBtn');
+
+            const canvasContainer = document.getElementById('canvasContainer');
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+
+            const hudVipName = document.getElementById('hudVipName');
+            const hpText = document.getElementById('hpText');
+            const hpBar = document.getElementById('hpBar');
+            const hudLevelBadge = document.getElementById('hudLevelBadge');
+            const levelProgressBar = document.getElementById('levelProgressBar');
+            const timerDisplay = document.getElementById('timerDisplay');
+            const comboDisplay = document.getElementById('comboDisplay');
+            const coinDisplay = document.getElementById('coinDisplay');
+            const soundToggleBtn = document.getElementById('soundToggleBtn');
+
+            const synergyBadge = document.getElementById('synergyBadge');
+            const feverBadge = document.getElementById('feverBadge');
+
+            const overdriveBtn = document.getElementById('overdriveBtn');
+            const overdriveFill = document.getElementById('overdriveFill');
+            const overdriveText = document.getElementById('overdriveText');
+
+            const replaceModal = document.getElementById('replaceModal');
+            const newRecruitCard = document.getElementById('newRecruitCard');
+            const replaceSlot0Btn = document.getElementById('replaceSlot0Btn');
+            const replaceSlot1Btn = document.getElementById('replaceSlot1Btn');
+            const discardRecruitBtn = document.getElementById('discardRecruitBtn');
+            const refundAmountText = document.getElementById('refundAmount');
+
+            const lastResultCard = document.getElementById('lastResultCard');
+            const finalLevelText = document.getElementById('finalLevelText');
+            const finalTimeText = document.getElementById('finalTimeText');
+            const finalKillsText = document.getElementById('finalKillsText');
+            const finalComboText = document.getElementById('finalComboText');
+            const startGameBtn = document.getElementById('startGameBtn');
+
+            const slotCountText = document.getElementById('slotCountText');
+            const vipWeaponBadge = document.getElementById('vipWeaponBadge');
+            const guardSlotEls = [document.getElementById('guardSlot0'), document.getElementById('guardSlot1')];
+            const summonBtn = document.getElementById('summonBtn');
+            const summonCostText = document.getElementById('summonCostText');
+            const gunDrawBtn = document.getElementById('gunDrawBtn');
+            const gunCostText = document.getElementById('gunCostText');
+            const dashBtn = document.getElementById('dashBtn');
+            const dashCooldownOverlay = document.getElementById('dashCooldownOverlay');
+            const dashStatusText = document.getElementById('dashStatusText');
+
+            const joystickZone = document.getElementById('joystickZone');
+            const joystickKnob = document.getElementById('joystickKnob');
+
+            // 커스터마이징 DOM
+            const vipNameInput = document.getElementById('vipNameInput');
+            const avatarPreviewCanvas = document.getElementById('avatarPreviewCanvas');
+            const previewCtx = avatarPreviewCanvas.getContext('2d');
+            const bodyColorInput = document.getElementById('bodyColorInput');
+            const auraColorInput = document.getElementById('auraColorInput');
+            const trailSelect = document.getElementById('trailSelect');
+            const randomDesignBtn = document.getElementById('randomDesignBtn');
+            const stageTraitBadge = document.getElementById('stageTraitBadge');
+            const lobbyLevelDiffBadge = document.getElementById('lobbyLevelDiffBadge');
+            const lobbyLevelDesc = document.getElementById('lobbyLevelDesc');
+
+            // ==========================================
+            // 2. 프로필, 총기, 10단계 레벨 및 100,000 경호원 생성기
+            // ==========================================
+            let selectedStartLevel = 1;
+            let currentLevel = 1;
+            let bestLevelReached = 1;
+            let levelKills = 0;
+
+            const customProfile = {
+                name: 'VIP 회장님',
+                body: 'suit',
+                hair: 'spiky',
+                hat: 'crown',
+                back: 'cape',
+                face: 'shades',
+                color: '#38bdf8',
+                auraColor: '#facc15',
+                trailStyle: 'ghost',
+                trait: 'rich'
+            };
+
+            const TRAIT_LABELS = {
+                rich: '💰 초기자금 120',
+                athlete: '👟 이동속도 +18%',
+                tank: '❤️ 최대체력 135',
+                magnet: '🧲 흡수범위 +60%'
+            };
+
+            const VIP_GUN_POOL = [
+                { name: '기본 권총', icon: '🔫', grade: '일반', color: '#38bdf8', damage: 24, rate: 0.40, speed: 470, count: 1, spread: 0.04, size: 4, pierce: 1, splash: 0 },
+                { name: '택티컬 SMG', icon: '🔫', grade: '희귀', color: '#34d399', damage: 16, rate: 0.19, speed: 530, count: 1, spread: 0.12, size: 3.5, pierce: 1, splash: 0 },
+                { name: '플라즈마 샷건', icon: '💥', grade: '영웅', color: '#fb923c', damage: 26, rate: 0.65, speed: 450, count: 4, spread: 0.34, size: 4.5, pierce: 1, splash: 26 },
+                { name: '관통 레일건', icon: '⚡', grade: '전설', color: '#c084fc', damage: 68, rate: 0.82, speed: 750, count: 1, spread: 0, size: 5.5, pierce: 4, splash: 0 },
+                { name: '헬파이어 런처', icon: '🚀', grade: '신화', color: '#f43f5e', damage: 78, rate: 0.90, speed: 400, count: 2, spread: 0.18, size: 6.5, pierce: 1, splash: 80 }
+            ];
+
+            const LEVEL_CONFIGS = [
+                { level: 1, tag: 'EASY', color: 'text-emerald-400', desc: '입문 구역: 적의 이동속도가 느리고 근접전만으로 여유롭게 격파 가능', goalKills: 12, spawnInterval: 1.50, hpMult: 0.60, spdMult: 0.65, dmgMult: 0.55, allowDasher: false, allowShooter: false, allowBoss: false, reward: 60 },
+                { level: 2, tag: 'EASY+', color: 'text-emerald-300', desc: '초급 경계선: 적의 수가 조금 늘어나며 근접+총기 협동이 유리합니다', goalKills: 16, spawnInterval: 1.32, hpMult: 0.78, spdMult: 0.75, dmgMult: 0.70, allowDasher: false, allowShooter: false, allowBoss: false, reward: 75 },
+                { level: 3, tag: 'NORMAL', color: 'text-sky-400', desc: '중립 구역: 빠른 돌격형 적(삼각형)이 합류하기 시작합니다', goalKills: 22, spawnInterval: 1.15, hpMult: 1.00, spdMult: 0.88, dmgMult: 0.85, allowDasher: true, allowShooter: false, allowBoss: false, reward: 90 },
+                { level: 4, tag: 'NORMAL+', color: 'text-sky-300', desc: '전선 확장: 원거리 탄막을 쏘는 포격형 적(마름모)이 등장합니다', goalKills: 28, spawnInterval: 1.02, hpMult: 1.25, spdMult: 0.96, dmgMult: 1.00, allowDasher: true, allowShooter: true, allowBoss: false, reward: 110 },
+                { level: 5, tag: 'HARD', color: 'text-amber-400', desc: '중간 보스 구역: 거대 드레드노트 보스가 침공 라인에 출현합니다!', goalKills: 34, spawnInterval: 0.92, hpMult: 1.55, spdMult: 1.04, dmgMult: 1.15, allowDasher: true, allowShooter: true, allowBoss: true, reward: 140 },
+                { level: 6, tag: 'HARD+', color: 'text-amber-300', desc: '정예 군단: 적들의 장갑이 단단해지며 2인 경호원 시너지가 필수입니다', goalKills: 40, spawnInterval: 0.82, hpMult: 1.90, spdMult: 1.12, dmgMult: 1.30, allowDasher: true, allowShooter: true, allowBoss: true, reward: 165 },
+                { level: 7, tag: 'EXPERT', color: 'text-orange-400', desc: '위험 경보: 다수의 포격 유닛과 돌격 유닛이 파상공세를 펼칩니다', goalKills: 48, spawnInterval: 0.72, hpMult: 2.35, spdMult: 1.20, dmgMult: 1.45, allowDasher: true, allowShooter: true, allowBoss: true, reward: 195 },
+                { level: 8, tag: 'MASTER', color: 'text-orange-500', desc: '심연의 방어선: 쉴 틈 없이 쏟아지는 탄막과 정예 병력을 뚫어내세요', goalKills: 56, spawnInterval: 0.62, hpMult: 2.90, spdMult: 1.28, dmgMult: 1.65, allowDasher: true, allowShooter: true, allowBoss: true, reward: 230 },
+                { level: 9, tag: 'NIGHTMARE', color: 'text-rose-400', desc: '악몽의 전장: 초고속 정예 몬스터와 보스급 개체가 연속 출현합니다', goalKills: 65, spawnInterval: 0.54, hpMult: 3.60, spdMult: 1.36, dmgMult: 1.85, allowDasher: true, allowShooter: true, allowBoss: true, reward: 280 },
+                { level: 10, tag: 'FINAL HELL', color: 'text-rose-500', desc: '최종 결전(MAX): 지옥의 군단 총공세! 끝까지 살아남아 전설이 되세요!', goalKills: 80, spawnInterval: 0.45, hpMult: 4.50, spdMult: 1.45, dmgMult: 2.15, allowDasher: true, allowShooter: true, allowBoss: true, reward: 500 }
+            ];
+
+            const GUARD_TITLES = [
+                '신입', '베테랑', '특수', '그림자', '강철', '사이버', '황실', '전설의', '광기의', '냉혈한',
+                '폭풍의', '불멸의', '심연의', '천상의', '기계화', '유령', '황금', '암흑', '태양의', '달빛',
+                '번개', '화염', '빙결', '중력', '차원', '초음속', '철벽', '무자비한', '고독한', '광속의',
+                '붉은', '푸른', '보랏빛', '백금', '흑요석', '에메랄드', '사파이어', '루비', '다이아', '오메가',
+                '알파', '제로', '네오', '하이퍼', '울트라', '메가', '기가', '테라', '퀀텀', '코스믹'
+            ];
+
+            const GUARD_TRAITS = [
+                { name: '화염', effect: 'burn', color: '#fb7185', mult: 1.15 },
+                { name: '빙결', effect: 'slow', color: '#38bdf8', mult: 1.05 },
+                { name: '전격', effect: 'chain', color: '#facc15', mult: 1.12 },
+                { name: '폭발', effect: 'splash', color: '#fb923c', mult: 1.18 },
+                { name: '관통', effect: 'pierce', color: '#c084fc', mult: 1.14 },
+                { name: '흡혈', effect: 'leech', color: '#f43f5e', mult: 1.08 },
+                { name: '초연사', effect: 'rapid', color: '#34d399', mult: 1.10 },
+                { name: '중장갑', effect: 'heavy', color: '#94a3b8', mult: 1.22 },
+                { name: '저격', effect: 'sniper', color: '#60a5fa', mult: 1.25 },
+                { name: '난사', effect: 'multi', color: '#f472b6', mult: 1.16 },
+                { name: '플라즈마', effect: 'splash', color: '#a78bfa', mult: 1.20 },
+                { name: '레이저', effect: 'pierce', color: '#22d3ee', mult: 1.18 },
+                { name: '독성', effect: 'burn', color: '#4ade80', mult: 1.12 },
+                { name: '중력장', effect: 'slow', color: '#818cf8', mult: 1.10 },
+                { name: '자기장', effect: 'chain', color: '#fde047', mult: 1.14 },
+                { name: '소닉', effect: 'rapid', color: '#2dd4bf', mult: 1.12 },
+                { name: '메테오', effect: 'splash', color: '#f97316', mult: 1.24 },
+                { name: '블리자드', effect: 'slow', color: '#7dd3fc', mult: 1.12 },
+                { name: '썬더', effect: 'chain', color: '#eab308', mult: 1.16 },
+                { name: '헬파이어', effect: 'burn', color: '#ef4444', mult: 1.22 },
+                { name: '보이드', effect: 'pierce', color: '#9333ea', mult: 1.20 },
+                { name: '솔라', effect: 'burn', color: '#f59e0b', mult: 1.18 },
+                { name: '루나', effect: 'slow', color: '#93c5fd', mult: 1.12 },
+                { name: '아크', effect: 'chain', color: '#38bdf8', mult: 1.16 },
+                { name: '크림슨', effect: 'leech', color: '#e11d48', mult: 1.15 },
+                { name: '에테르', effect: 'multi', color: '#c4b5fd', mult: 1.18 },
+                { name: '타이탄', effect: 'heavy', color: '#cbd5e1', mult: 1.26 },
+                { name: '발키리', effect: 'rapid', color: '#fcd34d', mult: 1.18 },
+                { name: '팔라딘', effect: 'heavy', color: '#fef08a', mult: 1.20 },
+                { name: '어쌔신', effect: 'sniper', color: '#f43f5e', mult: 1.28 },
+                { name: '버서커', effect: 'rapid', color: '#dc2626', mult: 1.22 },
+                { name: '드래곤', effect: 'splash', color: '#ea580c', mult: 1.28 },
+                { name: '피닉스', effect: 'burn', color: '#f97316', mult: 1.25 },
+                { name: '크라켄', effect: 'slow', color: '#0284c7', mult: 1.20 },
+                { name: '골렘', effect: 'heavy', color: '#78716c', mult: 1.24 },
+                { name: '세라핌', effect: 'multi', color: '#fde68a', mult: 1.26 },
+                { name: '데몬', effect: 'leech', color: '#be123c', mult: 1.24 },
+                { name: '사이킥', effect: 'chain', color: '#d946ef', mult: 1.20 },
+                { name: '나노', effect: 'rapid', color: '#10b981', mult: 1.16 },
+                { name: '오버드라이브', effect: 'multi', color: '#ec4899', mult: 1.30 }
+            ];
+
+            const GUARD_CLASSES = [
+                { name: '사격수', icon: '🔫', damage: 22, fireRate: 0.45, range: 300, speed: 460, magSize: 10, reloadTime: 1.0, projCount: 1, spread: 0.05, projSize: 4 },
+                { name: '방패병', icon: '🛡️', damage: 30, fireRate: 0.55, range: 145, speed: 290, magSize: 8, reloadTime: 0.9, projCount: 1, spread: 0, projSize: 10 },
+                { name: '테슬라', icon: '⚡', damage: 26, fireRate: 0.65, range: 290, speed: 430, magSize: 7, reloadTime: 1.1, projCount: 1, spread: 0.04, projSize: 5 },
+                { name: '스나이퍼', icon: '🎯', damage: 72, fireRate: 1.10, range: 430, speed: 680, magSize: 4, reloadTime: 1.3, projCount: 1, spread: 0, projSize: 4.5 },
+                { name: '메카닉', icon: '🚀', damage: 52, fireRate: 0.95, range: 350, speed: 360, magSize: 5, reloadTime: 1.4, projCount: 1, spread: 0.06, projSize: 7 },
+                { name: '샷건병', icon: '💥', damage: 17, fireRate: 0.80, range: 220, speed: 390, magSize: 6, reloadTime: 1.2, projCount: 4, spread: 0.35, projSize: 3.5 },
+                { name: '쌍권총', icon: '🔥', damage: 15, fireRate: 0.25, range: 270, speed: 480, magSize: 16, reloadTime: 1.0, projCount: 2, spread: 0.12, projSize: 3.5 },
+                { name: '중화기병', icon: '🧨', damage: 28, fireRate: 0.32, range: 280, speed: 410, magSize: 14, reloadTime: 1.4, projCount: 1, spread: 0.16, projSize: 4.5 },
+                { name: '마도사', icon: '🔮', damage: 36, fireRate: 0.72, range: 320, speed: 370, magSize: 7, reloadTime: 1.1, projCount: 2, spread: 0.18, projSize: 5.5 },
+                { name: '닌자', icon: '🥷', damage: 24, fireRate: 0.35, range: 280, speed: 540, magSize: 12, reloadTime: 0.8, projCount: 3, spread: 0.22, projSize: 3.5 },
+                { name: '레일거너', icon: '📡', damage: 85, fireRate: 1.25, range: 450, speed: 750, magSize: 3, reloadTime: 1.4, projCount: 1, spread: 0, projSize: 5 },
+                { name: '드론조종사', icon: '🛸', damage: 19, fireRate: 0.38, range: 330, speed: 440, magSize: 12, reloadTime: 1.0, projCount: 2, spread: 0.25, projSize: 4 },
+                { name: '화염방사병', icon: '🔥', damage: 13, fireRate: 0.14, range: 185, speed: 320, magSize: 22, reloadTime: 1.3, projCount: 2, spread: 0.28, projSize: 6 },
+                { name: '빙결술사', icon: '❄️', damage: 27, fireRate: 0.62, range: 300, speed: 380, magSize: 8, reloadTime: 1.1, projCount: 2, spread: 0.20, projSize: 5 },
+                { name: '성기사', icon: '⚔️', damage: 42, fireRate: 0.60, range: 165, speed: 310, magSize: 8, reloadTime: 1.0, projCount: 1, spread: 0, projSize: 9 },
+                { name: '기관포수', icon: '⚙️', damage: 20, fireRate: 0.22, range: 310, speed: 500, magSize: 18, reloadTime: 1.5, projCount: 1, spread: 0.10, projSize: 4 },
+                { name: '폭격수', icon: '💣', damage: 64, fireRate: 1.15, range: 360, speed: 330, magSize: 4, reloadTime: 1.4, projCount: 1, spread: 0.08, projSize: 8 },
+                { name: '음파요원', icon: '🔊', damage: 29, fireRate: 0.58, range: 260, speed: 420, magSize: 8, reloadTime: 1.0, projCount: 3, spread: 0.30, projSize: 5 },
+                { name: '중력술사', icon: '🌌', damage: 34, fireRate: 0.78, range: 310, speed: 340, magSize: 6, reloadTime: 1.2, projCount: 1, spread: 0, projSize: 7 },
+                { name: '광선검사', icon: '🗡️', damage: 46, fireRate: 0.48, range: 155, speed: 350, magSize: 10, reloadTime: 0.8, projCount: 1, spread: 0, projSize: 9 },
+                { name: '해커', icon: '💻', damage: 25, fireRate: 0.50, range: 320, speed: 470, magSize: 10, reloadTime: 0.9, projCount: 2, spread: 0.15, projSize: 4 },
+                { name: '헌터', icon: '🏹', damage: 44, fireRate: 0.68, range: 380, speed: 580, magSize: 6, reloadTime: 1.0, projCount: 1, spread: 0.02, projSize: 4 },
+                { name: '사무라이', icon: '⛩️', damage: 54, fireRate: 0.55, range: 170, speed: 380, magSize: 8, reloadTime: 0.9, projCount: 1, spread: 0, projSize: 10 },
+                { name: '발명가', icon: '🔧', damage: 31, fireRate: 0.64, range: 290, speed: 400, magSize: 8, reloadTime: 1.1, projCount: 2, spread: 0.24, projSize: 5 },
+                { name: '연금술사', icon: '⚗️', damage: 33, fireRate: 0.70, range: 280, speed: 360, magSize: 7, reloadTime: 1.1, projCount: 2, spread: 0.20, projSize: 5.5 },
+                { name: '기갑병', icon: '🤖', damage: 48, fireRate: 0.75, range: 320, speed: 410, magSize: 8, reloadTime: 1.3, projCount: 2, spread: 0.14, projSize: 6 },
+                { name: '특공대원', icon: '🎖️', damage: 26, fireRate: 0.36, range: 300, speed: 490, magSize: 12, reloadTime: 1.0, projCount: 1, spread: 0.07, projSize: 4 },
+                { name: '바운티헌터', icon: '🤠', damage: 38, fireRate: 0.56, range: 310, speed: 510, magSize: 6, reloadTime: 0.9, projCount: 1, spread: 0.04, projSize: 4.5 },
+                { name: '사이보그', icon: '🦾', damage: 35, fireRate: 0.46, range: 290, speed: 460, magSize: 10, reloadTime: 1.0, projCount: 2, spread: 0.12, projSize: 4.5 },
+                { name: '네크로맨서', icon: '💀', damage: 32, fireRate: 0.68, range: 310, speed: 370, magSize: 8, reloadTime: 1.1, projCount: 2, spread: 0.22, projSize: 5 },
+                { name: '드루이드', icon: '🌿', damage: 28, fireRate: 0.58, range: 290, speed: 400, magSize: 9, reloadTime: 1.0, projCount: 2, spread: 0.18, projSize: 4.5 },
+                { name: '수도승', icon: '📿', damage: 37, fireRate: 0.44, range: 230, speed: 430, magSize: 10, reloadTime: 0.9, projCount: 2, spread: 0.15, projSize: 5 },
+                { name: '해적', icon: '🏴‍☠️', damage: 41, fireRate: 0.72, range: 260, speed: 420, magSize: 6, reloadTime: 1.1, projCount: 3, spread: 0.28, projSize: 4.5 },
+                { name: '우주비행사', icon: '👨‍🚀', damage: 34, fireRate: 0.54, range: 330, speed: 450, magSize: 9, reloadTime: 1.0, projCount: 1, spread: 0.05, projSize: 5 },
+                { name: '요원K', icon: '🕶️', damage: 30, fireRate: 0.40, range: 310, speed: 500, magSize: 11, reloadTime: 0.9, projCount: 1, spread: 0.04, projSize: 4 },
+                { name: '방위군', icon: '🪖', damage: 24, fireRate: 0.42, range: 290, speed: 450, magSize: 12, reloadTime: 1.0, projCount: 1, spread: 0.08, projSize: 4 },
+                { name: '척탄병', icon: '🧨', damage: 56, fireRate: 1.00, range: 330, speed: 350, magSize: 5, reloadTime: 1.3, projCount: 1, spread: 0.10, projSize: 7 },
+                { name: '전투의무병', icon: '💉', damage: 22, fireRate: 0.48, range: 280, speed: 440, magSize: 10, reloadTime: 1.0, projCount: 1, spread: 0.06, projSize: 4 },
+                { name: '포탑엔지니어', icon: '🛠️', damage: 27, fireRate: 0.45, range: 300, speed: 430, magSize: 10, reloadTime: 1.1, projCount: 2, spread: 0.16, projSize: 4 },
+                { name: '암살자', icon: '🗡️', damage: 58, fireRate: 0.62, range: 250, speed: 560, magSize: 6, reloadTime: 0.8, projCount: 1, spread: 0.02, projSize: 4 },
+                { name: '광전사', icon: '🪓', damage: 50, fireRate: 0.50, range: 160, speed: 340, magSize: 9, reloadTime: 0.9, projCount: 1, spread: 0, projSize: 9.5 },
+                { name: '수호기사', icon: '🛡️', damage: 38, fireRate: 0.58, range: 155, speed: 300, magSize: 9, reloadTime: 1.0, projCount: 1, spread: 0, projSize: 9.5 },
+                { name: '정찰병', icon: '🔭', damage: 25, fireRate: 0.34, range: 340, speed: 520, magSize: 12, reloadTime: 0.9, projCount: 1, spread: 0.05, projSize: 3.5 },
+                { name: '폭풍술사', icon: '🌪️', damage: 35, fireRate: 0.66, range: 310, speed: 410, magSize: 8, reloadTime: 1.1, projCount: 3, spread: 0.26, projSize: 5 },
+                { name: '태양기사', icon: '☀️', damage: 45, fireRate: 0.60, range: 270, speed: 440, magSize: 8, reloadTime: 1.0, projCount: 2, spread: 0.14, projSize: 5.5 },
+                { name: '달빛궁수', icon: '🌙', damage: 47, fireRate: 0.64, range: 390, speed: 600, magSize: 6, reloadTime: 1.0, projCount: 1, spread: 0.02, projSize: 4 },
+                { name: '별빛마도사', icon: '⭐', damage: 39, fireRate: 0.58, range: 330, speed: 430, magSize: 9, reloadTime: 1.0, projCount: 3, spread: 0.24, projSize: 4.5 },
+                { name: '차원여행자', icon: '🌀', damage: 43, fireRate: 0.68, range: 320, speed: 470, magSize: 7, reloadTime: 1.1, projCount: 2, spread: 0.20, projSize: 5 },
+                { name: '시간술사', icon: '⏳', damage: 33, fireRate: 0.52, range: 300, speed: 420, magSize: 9, reloadTime: 0.9, projCount: 2, spread: 0.16, projSize: 4.5 },
+                { name: '최종병기', icon: '👑', damage: 65, fireRate: 0.55, range: 360, speed: 520, magSize: 10, reloadTime: 1.1, projCount: 3, spread: 0.18, projSize: 6 }
+            ];
+
+            const GRADE_STYLES = {
+                '일반': { class: 'grade-common', textClass: 'text-slate-300', badgeBg: 'bg-slate-700', mult: 1.0 },
+                '희귀': { class: 'grade-rare', textClass: 'text-sky-300', badgeBg: 'bg-sky-700', mult: 1.25 },
+                '영웅': { class: 'grade-epic', textClass: 'text-purple-300', badgeBg: 'bg-purple-700', mult: 1.55 },
+                '전설': { class: 'grade-legend', textClass: 'text-amber-300', badgeBg: 'bg-amber-700', mult: 1.95 },
+                '신화': { class: 'grade-mythic', textClass: 'text-rose-300', badgeBg: 'bg-rose-700', mult: 2.45 }
+            };
+
+            // ==========================================
+            // 3. 상세 2등신 전신 VIP 캐릭터 렌더러 & 로비 무대
+            // ==========================================
+            function drawCustomVipBody(targetCtx, x, y, radius, profile, animTime = 0, slashProgress = 0) {
+                const scale = radius / 20;
+                const bob = Math.sin(animTime * 6) * 1.4 * scale;
+
+                targetCtx.save();
+                targetCtx.translate(x, y);
+
+                // 바닥 오라 링
+                targetCtx.save();
+                targetCtx.strokeStyle = profile.auraColor;
+                targetCtx.globalAlpha = 0.45;
+                targetCtx.lineWidth = 2 * scale;
+                targetCtx.beginPath();
+                targetCtx.ellipse(0, 14 * scale, 16 * scale, 6 * scale, 0, 0, Math.PI * 2);
+                targetCtx.stroke();
+                targetCtx.restore();
+
+                // 등 장식 (Back Gear)
+                targetCtx.save();
+                targetCtx.translate(0, bob);
+                if (profile.back === 'cape') {
+                    targetCtx.fillStyle = profile.auraColor;
+                    targetCtx.beginPath();
+                    targetCtx.moveTo(-6 * scale, 0);
+                    targetCtx.lineTo(-17 * scale, 15 * scale + Math.sin(animTime * 8) * 2 * scale);
+                    targetCtx.lineTo(-3 * scale, 14 * scale);
+                    targetCtx.closePath();
+                    targetCtx.fill();
+                } else if (profile.back === 'wings') {
+                    targetCtx.strokeStyle = profile.auraColor;
+                    targetCtx.fillStyle = profile.auraColor + '44';
+                    targetCtx.lineWidth = 1.8 * scale;
+                    targetCtx.beginPath();
+                    targetCtx.moveTo(-4 * scale, 0);
+                    targetCtx.quadraticCurveTo(-22 * scale, -12 * scale, -16 * scale, 6 * scale);
+                    targetCtx.closePath();
+                    targetCtx.fill();
+                    targetCtx.stroke();
+                } else if (profile.back === 'jet') {
+                    targetCtx.fillStyle = '#475569';
+                    targetCtx.fillRect(-12 * scale, -2 * scale, 6 * scale, 11 * scale);
+                    targetCtx.fillStyle = '#fb923c';
+                    targetCtx.beginPath();
+                    targetCtx.arc(-9 * scale, 11 * scale, 2.5 * scale, 0, Math.PI * 2);
+                    targetCtx.fill();
+                }
+                targetCtx.restore();
+
+                // 다리 & 슈트 몸통
+                targetCtx.save();
+                targetCtx.translate(0, bob);
+                const legSwing = Math.sin(animTime * 10) * 2 * scale;
+                targetCtx.fillStyle = '#1e293b';
+                targetCtx.fillRect(-5 * scale, 9 * scale + legSwing * 0.4, 3.8 * scale, 6 * scale);
+                targetCtx.fillRect(1.5 * scale, 9 * scale - legSwing * 0.4, 3.8 * scale, 6 * scale);
+
+                targetCtx.fillStyle = profile.color;
+                targetCtx.strokeStyle = '#0f172a';
+                targetCtx.lineWidth = 1.5 * scale;
+                targetCtx.beginPath();
+                targetCtx.roundRect(-7.5 * scale, -1 * scale, 15 * scale, 12 * scale, 3.5 * scale);
+                targetCtx.fill();
+                targetCtx.stroke();
+
+                if (profile.body === 'suit') {
+                    targetCtx.fillStyle = '#f8fafc';
+                    targetCtx.beginPath();
+                    targetCtx.moveTo(-2.5 * scale, -1 * scale);
+                    targetCtx.lineTo(2.5 * scale, -1 * scale);
+                    targetCtx.lineTo(0, 6 * scale);
+                    targetCtx.closePath();
+                    targetCtx.fill();
+                } else if (profile.body === 'cyber') {
+                    targetCtx.fillStyle = profile.auraColor;
+                    targetCtx.beginPath();
+                    targetCtx.arc(0, 4 * scale, 2.5 * scale, 0, Math.PI * 2);
+                    targetCtx.fill();
+                } else if (profile.body === 'ninja') {
+                    targetCtx.fillStyle = '#ef4444';
+                    targetCtx.fillRect(-7.5 * scale, 5 * scale, 15 * scale, 2.2 * scale);
+                }
+
+                // 오른손 총기 및 에너지 블레이드
+                targetCtx.fillStyle = '#334155';
+                targetCtx.fillRect(6 * scale, 2 * scale, 9 * scale, 3.2 * scale);
+                targetCtx.fillStyle = '#38bdf8';
+                targetCtx.fillRect(13 * scale, 2.3 * scale, 3 * scale, 2.2 * scale);
+
+                // 머리 & 얼굴
+                targetCtx.fillStyle = '#fde68a';
+                targetCtx.beginPath();
+                targetCtx.arc(0, -8 * scale, 8.5 * scale, 0, Math.PI * 2);
+                targetCtx.fill();
+                targetCtx.stroke();
+
+                // 헤어스타일
+                targetCtx.fillStyle = profile.auraColor;
+                if (profile.hair === 'spiky') {
+                    targetCtx.beginPath();
+                    targetCtx.moveTo(-9 * scale, -9 * scale);
+                    targetCtx.lineTo(-7 * scale, -18 * scale);
+                    targetCtx.lineTo(-2 * scale, -14 * scale);
+                    targetCtx.lineTo(1 * scale, -19 * scale);
+                    targetCtx.lineTo(5 * scale, -14 * scale);
+                    targetCtx.lineTo(9 * scale, -17 * scale);
+                    targetCtx.lineTo(9 * scale, -9 * scale);
+                    targetCtx.closePath();
+                    targetCtx.fill();
+                } else if (profile.hair === 'bob') {
+                    targetCtx.beginPath();
+                    targetCtx.arc(0, -9 * scale, 9.5 * scale, Math.PI, 0);
+                    targetCtx.lineTo(10 * scale, -3 * scale);
+                    targetCtx.lineTo(-10 * scale, -3 * scale);
+                    targetCtx.closePath();
+                    targetCtx.fill();
+                } else if (profile.hair === 'ponytail') {
+                    targetCtx.beginPath();
+                    targetCtx.arc(0, -10 * scale, 9 * scale, Math.PI, 0);
+                    targetCtx.fill();
+                    targetCtx.beginPath();
+                    targetCtx.ellipse(-10 * scale, -10 * scale, 3.5 * scale, 6 * scale, 0.4, 0, Math.PI * 2);
+                    targetCtx.fill();
+                } else if (profile.hair === 'mohawk') {
+                    targetCtx.beginPath();
+                    targetCtx.moveTo(-2.5 * scale, -16 * scale);
+                    targetCtx.lineTo(0, -22 * scale);
+                    targetCtx.lineTo(3.5 * scale, -15 * scale);
+                    targetCtx.closePath();
+                    targetCtx.fill();
+                } else {
+                    targetCtx.beginPath();
+                    targetCtx.arc(0, -10 * scale, 8.8 * scale, Math.PI * 1.05, -0.05);
+                    targetCtx.fill();
+                }
+
+                // 표정
+                if (profile.face === 'shades') {
+                    targetCtx.fillStyle = '#090d16';
+                    targetCtx.fillRect(-5 * scale, -10 * scale, 11 * scale, 3.4 * scale);
+                } else if (profile.face === 'visor') {
+                    targetCtx.fillStyle = '#22d3ee';
+                    targetCtx.fillRect(-5 * scale, -10 * scale, 12 * scale, 3.2 * scale);
+                } else if (profile.face === 'angry') {
+                    targetCtx.strokeStyle = '#090d16';
+                    targetCtx.lineWidth = 1.6 * scale;
+                    targetCtx.beginPath();
+                    targetCtx.moveTo(-4 * scale, -10.5 * scale);
+                    targetCtx.lineTo(-1 * scale, -9 * scale);
+                    targetCtx.moveTo(5 * scale, -10.5 * scale);
+                    targetCtx.lineTo(2 * scale, -9 * scale);
+                    targetCtx.stroke();
+                } else if (profile.face === 'cat') {
+                    targetCtx.fillStyle = '#090d16';
+                    targetCtx.beginPath();
+                    targetCtx.arc(-2.5 * scale, -8.5 * scale, 1.3 * scale, 0, Math.PI * 2);
+                    targetCtx.arc(3.5 * scale, -8.5 * scale, 1.3 * scale, 0, Math.PI * 2);
+                    targetCtx.fill();
+                    targetCtx.strokeStyle = '#090d16';
+                    targetCtx.lineWidth = 1.1 * scale;
+                    targetCtx.beginPath();
+                    targetCtx.arc(-0.5 * scale, -6 * scale, 1.5 * scale, 0, Math.PI);
+                    targetCtx.arc(2.5 * scale, -6 * scale, 1.5 * scale, 0, Math.PI);
+                    targetCtx.stroke();
+                } else {
+                    targetCtx.fillStyle = '#090d16';
+                    targetCtx.beginPath();
+                    targetCtx.arc(-2.5 * scale, -8.5 * scale, 1.3 * scale, 0, Math.PI * 2);
+                    targetCtx.arc(3.5 * scale, -8.5 * scale, 1.3 * scale, 0, Math.PI * 2);
+                    targetCtx.fill();
+                }
+
+                // 헤드기어
+                if (profile.hat === 'crown') {
+                    targetCtx.fillStyle = '#facc15';
+                    targetCtx.beginPath();
+                    targetCtx.moveTo(-5.5 * scale, -16 * scale);
+                    targetCtx.lineTo(-6.5 * scale, -22 * scale);
+                    targetCtx.lineTo(-2 * scale, -18.5 * scale);
+                    targetCtx.lineTo(0, -23 * scale);
+                    targetCtx.lineTo(2 * scale, -18.5 * scale);
+                    targetCtx.lineTo(6.5 * scale, -22 * scale);
+                    targetCtx.lineTo(5.5 * scale, -16 * scale);
+                    targetCtx.closePath();
+                    targetCtx.fill();
+                } else if (profile.hat === 'horns') {
+                    targetCtx.fillStyle = '#f43f5e';
+                    targetCtx.beginPath();
+                    targetCtx.moveTo(-6 * scale, -15 * scale);
+                    targetCtx.lineTo(-9 * scale, -22 * scale);
+                    targetCtx.lineTo(-3 * scale, -17 * scale);
+                    targetCtx.moveTo(6 * scale, -15 * scale);
+                    targetCtx.lineTo(9 * scale, -22 * scale);
+                    targetCtx.lineTo(3 * scale, -17 * scale);
+                    targetCtx.fill();
+                } else if (profile.hat === 'ears') {
+                    targetCtx.fillStyle = profile.color;
+                    targetCtx.beginPath();
+                    targetCtx.moveTo(-7 * scale, -14 * scale);
+                    targetCtx.lineTo(-6 * scale, -21 * scale);
+                    targetCtx.lineTo(-2 * scale, -16 * scale);
+                    targetCtx.moveTo(7 * scale, -14 * scale);
+                    targetCtx.lineTo(6 * scale, -21 * scale);
+                    targetCtx.lineTo(2 * scale, -16 * scale);
+                    targetCtx.fill();
+                }
+
+                targetCtx.restore();
+                targetCtx.restore();
+            }
+
+            let lobbyAnimId = null;
+            function renderLobbyStage() {
+                if (!previewCtx || !avatarPreviewCanvas) return;
+                const t = performance.now() / 1000;
+                const w = avatarPreviewCanvas.width;
+                const h = avatarPreviewCanvas.height;
+
+                previewCtx.clearRect(0, 0, w, h);
+
+                // 홀로그램 플랫폼 링
+                previewCtx.save();
+                previewCtx.translate(w / 2, h / 2 + 54);
+                previewCtx.strokeStyle = 'rgba(56, 189, 248, 0.45)';
+                previewCtx.lineWidth = 2.5;
+                previewCtx.beginPath();
+                previewCtx.ellipse(0, 0, 72, 22, 0, 0, Math.PI * 2);
+                previewCtx.stroke();
+
+                previewCtx.strokeStyle = customProfile.auraColor;
+                previewCtx.globalAlpha = 0.55;
+                previewCtx.lineWidth = 1.5;
+                previewCtx.beginPath();
+                previewCtx.ellipse(0, 0, 52 + Math.sin(t * 4) * 4, 15, 0, 0, Math.PI * 2);
+                previewCtx.stroke();
+                previewCtx.restore();
+
+                // 공전 호위 드론 2기
+                for (let i = 0; i < 2; i++) {
+                    const ang = t * 2.2 + i * Math.PI;
+                    const dx = w / 2 + Math.cos(ang) * 76;
+                    const dy = h / 2 + Math.sin(ang) * 26;
+                    previewCtx.save();
+                    previewCtx.fillStyle = i === 0 ? '#38bdf8' : '#c084fc';
+                    previewCtx.shadowColor = previewCtx.fillStyle;
+                    previewCtx.shadowBlur = 12;
+                    previewCtx.beginPath();
+                    previewCtx.arc(dx, dy, 6, 0, Math.PI * 2);
+                    previewCtx.fill();
+                    previewCtx.restore();
+                }
+
+                // 중앙 VIP 대형 캐릭터
+                drawCustomVipBody(previewCtx, w / 2, h / 2 + 6, 56, customProfile, t, 0);
+
+                if (!homeLobbyScreen.classList.contains('hidden')) {
+                    lobbyAnimId = requestAnimationFrame(renderLobbyStage);
+                }
+            }
+
+            function syncProfileUI() {
+                vipNameInput.value = customProfile.name;
+                bodyColorInput.value = customProfile.color;
+                auraColorInput.value = customProfile.auraColor;
+                trailSelect.value = customProfile.trailStyle;
+
+                ['body', 'hair', 'hat', 'back', 'face'].forEach(key => {
+                    const el = document.getElementById(key + 'Options');
+                    if (el) {
+                        el.querySelectorAll('button').forEach(b => {
+                            b.classList.toggle('active', b.dataset[key] === customProfile[key]);
+                        });
+                    }
+                });
+
+                document.querySelectorAll('#traitCards button').forEach(b => {
+                    b.classList.toggle('active', b.dataset.trait === customProfile.trait);
+                });
+                stageTraitBadge.textContent = TRAIT_LABELS[customProfile.trait] || '';
+            }
+
+            function bindOptionGroup(containerId, propKey) {
+                const container = document.getElementById(containerId);
+                if (!container) return;
+                container.querySelectorAll('button').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        customProfile[propKey] = btn.dataset[propKey];
+                        syncProfileUI();
+                    });
+                });
+            }
+
+            bindOptionGroup('bodyOptions', 'body');
+            bindOptionGroup('hairOptions', 'hair');
+            bindOptionGroup('hatOptions', 'hat');
+            bindOptionGroup('backOptions', 'back');
+            bindOptionGroup('faceOptions', 'face');
+
+            document.querySelectorAll('#traitCards button').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    customProfile.trait = btn.dataset.trait;
+                    syncProfileUI();
+                });
+            });
+
+            document.querySelectorAll('#levelSelectGrid button').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    selectedStartLevel = parseInt(btn.dataset.lvl, 10) || 1;
+                    document.querySelectorAll('#levelSelectGrid button').forEach(b => {
+                        b.classList.toggle('active', parseInt(b.dataset.lvl, 10) === selectedStartLevel);
+                    });
+                    const cfg = LEVEL_CONFIGS[selectedStartLevel - 1] || LEVEL_CONFIGS[0];
+                    lobbyLevelDiffBadge.textContent = `LV.${String(cfg.level).padStart(2, '0')} · ${cfg.tag}`;
+                    lobbyLevelDiffBadge.className = `text-[10px] font-orbitron font-bold ${cfg.color}`;
+                    lobbyLevelDesc.textContent = cfg.desc;
+                });
+            });
+
+            vipNameInput.addEventListener('input', () => {
+                const val = vipNameInput.value.trim();
+                customProfile.name = val || 'VIP 회장님';
+            });
+            bodyColorInput.addEventListener('input', () => { customProfile.color = bodyColorInput.value; });
+            auraColorInput.addEventListener('input', () => { customProfile.auraColor = auraColorInput.value; });
+            trailSelect.addEventListener('change', () => { customProfile.trailStyle = trailSelect.value; });
+
+            randomDesignBtn.addEventListener('click', () => {
+                const bodies = ['suit', 'cyber', 'coat', 'ninja'];
+                const hairs = ['spiky', 'bob', 'ponytail', 'mohawk', 'sleek'];
+                const hats = ['crown', 'horns', 'ears', 'none'];
+                const backs = ['cape', 'wings', 'jet', 'none'];
+                const faces = ['shades', 'visor', 'cute', 'angry', 'cat'];
+                const colors = ['#38bdf8', '#f43f5e', '#34d399', '#c084fc', '#fb923c', '#facc15'];
+
+                customProfile.body = bodies[Math.floor(Math.random() * bodies.length)];
+                customProfile.hair = hairs[Math.floor(Math.random() * hairs.length)];
+                customProfile.hat = hats[Math.floor(Math.random() * hats.length)];
+                customProfile.back = backs[Math.floor(Math.random() * backs.length)];
+                customProfile.face = faces[Math.floor(Math.random() * faces.length)];
+                customProfile.color = colors[Math.floor(Math.random() * colors.length)];
+                customProfile.auraColor = colors[Math.floor(Math.random() * colors.length)];
+
+                syncProfileUI();
+            });
+
+            // ==========================================
+            // 3-1. 클라우드 저장소 (Firestore) 안전 비동기 연동
+            // ==========================================
+            let db = null;
+            let auth = null;
+            let currentUser = null;
+            let firestoreFns = null;
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+            function updateCloudStatus(text, colorClass = 'text-emerald-400') {
+                if (!cloudStatusBadge) return;
+                cloudStatusBadge.textContent = text;
+                cloudStatusBadge.className = `text-[11px] font-bold ${colorClass}`;
+            }
+
+            async function initCloudStorage() {
+                try {
+                    if (typeof __firebase_config === 'undefined') {
+                        updateCloudStatus('로컬 모드 준비됨', 'text-slate-400');
+                        return;
+                    }
+                    const [appMod, authMod, fsMod] = await Promise.all([
+                        import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js"),
+                        import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"),
+                        import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js")
+                    ]);
+
+                    firestoreFns = { doc: fsMod.doc, getDoc: fsMod.getDoc, setDoc: fsMod.setDoc };
+                    const firebaseConfig = JSON.parse(__firebase_config);
+                    const app = appMod.initializeApp(firebaseConfig);
+                    auth = authMod.getAuth(app);
+                    db = fsMod.getFirestore(app);
+
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await authMod.signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await authMod.signInAnonymously(auth);
+                    }
+
+                    currentUser = auth.currentUser;
+                    if (!currentUser) return;
+
+                    updateCloudStatus('☁️ 동기화 완료', 'text-emerald-400');
+                    await loadPlayerSaveData();
+                } catch (err) {
+                    console.warn('Cloud storage fallback:', err);
+                    updateCloudStatus('☁️ 오프라인 대기', 'text-slate-400');
+                }
+            }
+
+            async function loadPlayerSaveData() {
+                if (!db || !currentUser || !firestoreFns) return;
+                try {
+                    const saveDocRef = firestoreFns.doc(db, 'artifacts', appId, 'users', currentUser.uid, 'vip_guardian_save', 'profile_data');
+                    const snap = await firestoreFns.getDoc(saveDocRef);
+                    if (snap.exists()) {
+                        const data = snap.data();
+                        if (data.customProfile) {
+                            Object.assign(customProfile, data.customProfile);
+                            syncProfileUI();
+                        }
+                        if (typeof data.bestSurvivalSec === 'number') {
+                            bestSurvivalSec = data.bestSurvivalSec;
+                        }
+                        if (typeof data.bestLevelReached === 'number') {
+                            bestLevelReached = Math.max(1, data.bestLevelReached);
+                        }
+                        lobbyBestTime.textContent = `${formatTime(bestSurvivalSec)} (LV.${bestLevelReached})`;
+                        updateCloudStatus('☁️ 불러오기 완료', 'text-emerald-400');
+                    }
+                } catch (err) {
+                    console.warn('Load save error:', err);
+                }
+            }
+
+            async function savePlayerSaveData(manualTrigger = false) {
+                if (!db || !currentUser || !firestoreFns) {
+                    if (manualTrigger) {
+                        saveProfileBtn.textContent = '✅ 저장됨';
+                        setTimeout(() => { saveProfileBtn.textContent = '💾 저장'; }, 1400);
+                    }
+                    return;
+                }
+                try {
+                    updateCloudStatus('⏳ 저장 중...', 'text-sky-400');
+                    if (manualTrigger) saveProfileBtn.textContent = '⏳ 저장 중';
+
+                    const saveDocRef = firestoreFns.doc(db, 'artifacts', appId, 'users', currentUser.uid, 'vip_guardian_save', 'profile_data');
+                    await firestoreFns.setDoc(saveDocRef, {
+                        customProfile: { ...customProfile },
+                        bestSurvivalSec: bestSurvivalSec,
+                        bestLevelReached: bestLevelReached,
+                        updatedAt: Date.now()
+                    }, { merge: true });
+
+                    updateCloudStatus('☁️ 저장 완료!', 'text-emerald-400');
+                    if (manualTrigger) {
+                        initAudio();
+                        playSfx('coin');
+                        saveProfileBtn.textContent = '✅ 저장 완료';
+                        setTimeout(() => { saveProfileBtn.textContent = '💾 저장'; }, 1500);
+                    }
+                } catch (err) {
+                    console.warn('Save data error:', err);
+                    updateCloudStatus('⚠️ 저장 지연', 'text-amber-400');
+                    if (manualTrigger) saveProfileBtn.textContent = '💾 저장';
+                }
+            }
+
+            // ==========================================
+            // 4. 사운드 시스템 (Tone.js)
+            // ==========================================
+            let soundEnabled = true;
+            let synth = null;
+
+            function initAudio() {
+                try {
+                    if (!synth && typeof Tone !== 'undefined') {
+                        synth = new Tone.PolySynth(Tone.Synth, {
+                            oscillator: { type: 'triangle' },
+                            envelope: { attack: 0.008, decay: 0.09, sustain: 0.04, release: 0.16 }
+                        }).toDestination();
+                        synth.volume.value = -10;
+                    }
+                    if (typeof Tone !== 'undefined' && Tone.context.state !== 'running') {
+                        Tone.start();
+                    }
+                } catch (e) {}
+            }
+
+            function playSfx(type) {
+                if (!soundEnabled || !synth) return;
+                try {
+                    const now = Tone.now();
+                    if (type === 'shoot') synth.triggerAttackRelease('C5', '32n', now);
+                    else if (type === 'slash') synth.triggerAttackRelease('G4', '16n', now);
+                    else if (type === 'coin') synth.triggerAttackRelease('E6', '32n', now);
+                    else if (type === 'summon') {
+                        synth.triggerAttackRelease('C5', '16n', now);
+                        synth.triggerAttackRelease('E5', '16n', now + 0.05);
+                        synth.triggerAttackRelease('G5', '16n', now + 0.10);
+                    } else if (type === 'upgrade') {
+                        synth.triggerAttackRelease('G5', '16n', now);
+                        synth.triggerAttackRelease('C6', '8n', now + 0.07);
+                    } else if (type === 'dash') synth.triggerAttackRelease('A4', '16n', now);
+                    else if (type === 'overdrive') {
+                        synth.triggerAttackRelease('C4', '8n', now);
+                        synth.triggerAttackRelease('G4', '8n', now + 0.06);
+                        synth.triggerAttackRelease('C5', '4n', now + 0.12);
+                    } else if (type === 'hit') synth.triggerAttackRelease('F2', '16n', now);
+                    else if (type === 'gameover') {
+                        synth.triggerAttackRelease('E4', '8n', now);
+                        synth.triggerAttackRelease('C4', '8n', now + 0.12);
+                        synth.triggerAttackRelease('G3', '4n', now + 0.24);
+                    }
+                } catch (e) {}
+            }
+
+            function toggleSoundState() {
+                soundEnabled = !soundEnabled;
+                const icon = soundEnabled ? '🔊' : '🔇';
+                soundToggleBtn.textContent = icon;
+                lobbySoundBtn.textContent = icon;
+                if (soundEnabled) initAudio();
+            }
+
+            // ==========================================
+            // 5. 게임 핵심 상태 및 변수
+            // ==========================================
+            let arenaWidth = 400;
+            let arenaHeight = 460;
+
+            let isRunning = false;
+            let isModalPaused = false;
+            let elapsedTime = 0;
+            let bestSurvivalSec = 0;
+            let kills = 0;
+            let coins = 80;
+            let summonCost = 40;
+            let gunDrawCost = 35;
+            let pendingRecruit = null;
+
+            let comboCount = 0;
+            let comboTimer = 0;
+            let maxCombo = 0;
+            let overdriveCharge = 0;
+            let screenShake = 0;
+            let isFeverTime = false;
+            let feverTimer = 0;
+            let synergyActive = false;
+
+            const vip = {
+                x: 80,
+                y: 230,
+                radius: 18,
+                speed: 205,
+                hp: 100,
+                maxHp: 100,
+                invulnTimer: 0,
+                dashCooldown: 0,
+                dashMaxCooldown: 2.3,
+                dashTimer: 0,
+                dashDirX: 1,
+                dashDirY: 0,
+                slashTimer: 0,
+                slashCooldown: 0.45,
+                gun: VIP_GUN_POOL[0],
+                gunTimer: 0,
+                trails: []
+            };
+
+            let guards = [];
+            let enemies = [];
+            let projectiles = [];
+            let enemyProjectiles = [];
+            let gems = [];
+            let particles = [];
+            let floatingTexts = [];
+            let shockwaves = [];
+
+            let enemySpawnTimer = 0;
+            let bossSpawnedInLevel = false;
+
+            function resizeCanvas() {
+                const rect = canvasContainer.getBoundingClientRect();
+                if (rect.width === 0 || rect.height === 0) return;
+                const dpr = window.devicePixelRatio || 1;
+                arenaWidth = rect.width;
+                arenaHeight = rect.height;
+                canvas.width = arenaWidth * dpr;
+                canvas.height = arenaHeight * dpr;
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            }
+            window.addEventListener('resize', resizeCanvas);
+
+            // ==========================================
+            // 6. 아날로그 스틱 & 키보드 컨트롤
+            // ==========================================
+            const keys = {};
+            const joyInput = { x: 0, y: 0, active: false, id: null };
+
+            window.addEventListener('keydown', (e) => {
+                keys[e.code] = true;
+                if (e.code === 'Space' && isRunning && !isModalPaused) {
+                    e.preventDefault();
+                    triggerDash();
+                }
+                if ((e.code === 'KeyQ' || e.code === 'ShiftLeft') && isRunning && !isModalPaused) {
+                    e.preventDefault();
+                    triggerOverdrive();
+                }
+            });
+            window.addEventListener('keyup', (e) => { keys[e.code] = false; });
+
+            function updateJoystick(clientX, clientY) {
+                const rect = joystickZone.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                const maxRadius = rect.width / 2 - 14;
+
+                let dx = clientX - centerX;
+                let dy = clientY - centerY;
+                const dist = Math.hypot(dx, dy);
+
+                if (dist > maxRadius) {
+                    dx = (dx / dist) * maxRadius;
+                    dy = (dy / dist) * maxRadius;
+                }
+
+                joystickKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+                joyInput.x = dx / maxRadius;
+                joyInput.y = dy / maxRadius;
+            }
+
+            function resetJoystick() {
+                joyInput.active = false;
+                joyInput.id = null;
+                joyInput.x = 0;
+                joyInput.y = 0;
+                joystickKnob.style.transform = 'translate(-50%, -50%)';
+            }
+
+            joystickZone.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (e.changedTouches.length > 0) {
+                    const t = e.changedTouches[0];
+                    joyInput.active = true;
+                    joyInput.id = t.identifier;
+                    updateJoystick(t.clientX, t.clientY);
+                }
+            }, { passive: false });
+
+            window.addEventListener('touchmove', (e) => {
+                if (!joyInput.active) return;
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    if (e.changedTouches[i].identifier === joyInput.id) {
+                        updateJoystick(e.changedTouches[i].clientX, e.changedTouches[i].clientY);
+                        break;
+                    }
+                }
+            }, { passive: true });
+
+            window.addEventListener('touchend', (e) => {
+                if (!joyInput.active) return;
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    if (e.changedTouches[i].identifier === joyInput.id) {
+                        resetJoystick();
+                        break;
+                    }
+                }
+            });
+
+            window.addEventListener('touchcancel', () => {
+                if (joyInput.active) resetJoystick();
+            });
+
+            joystickZone.addEventListener('mousedown', (e) => {
+                joyInput.active = true;
+                updateJoystick(e.clientX, e.clientY);
+            });
+            window.addEventListener('mousemove', (e) => {
+                if (joyInput.active && joyInput.id === null) {
+                    updateJoystick(e.clientX, e.clientY);
+                }
+            });
+            window.addEventListener('mouseup', () => {
+                if (joyInput.active && joyInput.id === null) {
+                    resetJoystick();
+                }
+            });
+
+            // ==========================================
+            // 7. 경호원 생성, 뽑기, 총기 뽑기 & 강화
+            // ==========================================
+            function generateGuard() {
+                const roll = Math.random() * 100;
+                let grade = '일반';
+                if (roll < 3) grade = '신화';
+                else if (roll < 13) grade = '전설';
+                else if (roll < 34) grade = '영웅';
+                else if (roll < 66) grade = '희귀';
+
+                const tIdx = Math.floor(Math.random() * GUARD_TITLES.length);
+                const trIdx = Math.floor(Math.random() * GUARD_TRAITS.length);
+                const cIdx = Math.floor(Math.random() * GUARD_CLASSES.length);
+
+                const title = GUARD_TITLES[tIdx];
+                const trait = GUARD_TRAITS[trIdx];
+                const gClass = GUARD_CLASSES[cIdx];
+                const serialNumber = (tIdx * 2000) + (trIdx * 50) + cIdx + 1;
+                const serialStr = `No.${String(serialNumber).padStart(6, '0')}`;
+
+                const gStyle = GRADE_STYLES[grade];
+                const totalMult = gStyle.mult * trait.mult;
+
+                return {
+                    id: Date.now() + Math.random(),
+                    serial: serialStr,
+                    grade: grade,
+                    name: `${title} ${trait.name} ${gClass.name}`,
+                    icon: gClass.icon,
+                    effect: trait.effect,
+                    color: trait.color,
+                    star: 1,
+                    x: vip.x,
+                    y: vip.y,
+                    damage: Math.round(gClass.damage * totalMult),
+                    fireRate: Number((gClass.fireRate / (trait.effect === 'rapid' ? 1.25 : 1)).toFixed(2)),
+                    range: gClass.range,
+                    speed: gClass.speed,
+                    magSize: gClass.magSize + (trait.effect === 'multi' ? 2 : 0),
+                    ammo: gClass.magSize + (trait.effect === 'multi' ? 2 : 0),
+                    reloadTime: gClass.reloadTime,
+                    reloadTimer: 0,
+                    fireTimer: 0,
+                    projCount: gClass.projCount + (trait.effect === 'multi' ? 1 : 0),
+                    spread: gClass.spread,
+                    projSize: gClass.projSize
+                };
+            }
+
+            function triggerSummon() {
+                if (!isRunning || isModalPaused || coins < summonCost) return;
+                initAudio();
+                coins -= summonCost;
+                summonCost += 12;
+
+                const recruit = generateGuard();
+                playSfx('summon');
+                addFloatingText(vip.x, vip.y - 26, `${recruit.serial} 소환!`, recruit.color);
+
+                if (guards.length < 2) {
+                    guards.push(recruit);
+                    spawnParticles(vip.x, vip.y, recruit.color, 18);
+                } else {
+                    pendingRecruit = recruit;
+                    openReplaceModal();
+                }
+                updateUI();
+            }
+
+            function triggerGunDraw() {
+                if (!isRunning || isModalPaused || coins < gunDrawCost) return;
+                initAudio();
+                coins -= gunDrawCost;
+                gunDrawCost += 15;
+
+                const roll = Math.random() * 100;
+                let idx = 0;
+                if (roll < 8) idx = 4;
+                else if (roll < 24) idx = 3;
+                else if (roll < 52) idx = 2;
+                else if (roll < 82) idx = 1;
+                else idx = 0;
+
+                vip.gun = VIP_GUN_POOL[idx];
+                playSfx('upgrade');
+                addFloatingText(vip.x, vip.y - 34, `${vip.gun.icon} ${vip.gun.name} 장착!`, vip.gun.color);
+                spawnParticles(vip.x, vip.y, vip.gun.color, 20);
+                updateUI();
+            }
+
+            function upgradeGuard(slotIdx) {
+                const g = guards[slotIdx];
+                if (!g || g.star >= 3) return;
+                const upCost = g.star === 1 ? 65 : 130;
+                if (coins < upCost) return;
+
+                initAudio();
+                coins -= upCost;
+                g.star += 1;
+                g.damage = Math.round(g.damage * 1.48);
+                g.fireRate = Number((g.fireRate * 0.84).toFixed(2));
+                g.magSize += 3;
+                g.ammo = g.magSize;
+
+                playSfx('upgrade');
+                screenShake = 5;
+                shockwaves.push({ x: g.x, y: g.y, r: 8, maxR: 75, color: '#facc15', alpha: 0.9 });
+                addFloatingText(g.x, g.y - 22, `★${g.star} 각성 진화!`, '#facc15');
+                spawnParticles(g.x, g.y, '#facc15', 22);
+                updateUI();
+            }
+
+            function renderCardHTML(g, labelPrefix = '') {
+                const style = GRADE_STYLES[g.grade];
+                return `
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-[10px] font-black px-1.5 py-0.5 rounded text-white ${style.badgeBg}">${labelPrefix}${g.grade} ★${g.star}</span>
+                        <span class="text-[10px] font-orbitron text-slate-400">${g.serial}</span>
+                    </div>
+                    <div class="text-xs font-black ${style.textClass} truncate">${g.icon} ${g.name}</div>
+                    <div class="text-[10px] text-slate-300 mt-0.5">공격력 ${g.damage} · 연사 ${g.fireRate}s</div>
+                `;
+            }
+
+            function openReplaceModal() {
+                isModalPaused = true;
+                replaceModal.classList.remove('hidden');
+
+                const newStyle = GRADE_STYLES[pendingRecruit.grade];
+                newRecruitCard.className = `w-full max-w-xs border-2 rounded-xl p-2.5 mb-3 text-left ${newStyle.class}`;
+                newRecruitCard.innerHTML = renderCardHTML(pendingRecruit, 'NEW · ');
+
+                [0, 1].forEach(idx => {
+                    const btn = idx === 0 ? replaceSlot0Btn : replaceSlot1Btn;
+                    const cur = guards[idx];
+                    const curStyle = GRADE_STYLES[cur.grade];
+                    btn.className = `border-2 rounded-xl p-2 text-left hover:brightness-110 transition cursor-pointer ${curStyle.class}`;
+                    btn.innerHTML = renderCardHTML(cur, `슬롯 ${idx + 1} 교체 · `);
+                });
+
+                const refund = Math.floor(summonCost * 0.45);
+                refundAmountText.textContent = refund;
+            }
+
+            function closeReplaceModal() {
+                pendingRecruit = null;
+                isModalPaused = false;
+                replaceModal.classList.add('hidden');
+                updateUI();
+            }
+
+            replaceSlot0Btn.addEventListener('click', () => {
+                if (!pendingRecruit) return;
+                guards[0] = pendingRecruit;
+                playSfx('upgrade');
+                spawnParticles(vip.x, vip.y, pendingRecruit.color, 18);
+                closeReplaceModal();
+            });
+
+            replaceSlot1Btn.addEventListener('click', () => {
+                if (!pendingRecruit) return;
+                guards[1] = pendingRecruit;
+                playSfx('upgrade');
+                spawnParticles(vip.x, vip.y, pendingRecruit.color, 18);
+                closeReplaceModal();
+            });
+
+            discardRecruitBtn.addEventListener('click', () => {
+                const refund = Math.floor(summonCost * 0.45);
+                coins += refund;
+                playSfx('coin');
+                addFloatingText(vip.x, vip.y - 20, `+${refund} 크레딧`, '#facc15');
+                closeReplaceModal();
+            });
+
+            // ==========================================
+            // 8. 대시, 궁극기 & 단일 라인 적 스폰
+            // ==========================================
+            function triggerDash() {
+                if (!isRunning || isModalPaused || vip.dashCooldown > 0) return;
+                initAudio();
+                vip.dashCooldown = vip.dashMaxCooldown;
+                vip.dashTimer = 0.18;
+                vip.invulnTimer = 0.35;
+                screenShake = 4;
+                playSfx('dash');
+                shockwaves.push({ x: vip.x, y: vip.y, r: 10, maxR: 55, color: '#38bdf8', alpha: 0.7 });
+                spawnParticles(vip.x, vip.y, '#38bdf8', 14);
+            }
+
+            function triggerOverdrive() {
+                if (!isRunning || isModalPaused || overdriveCharge < 100) return;
+                initAudio();
+                overdriveCharge = 0;
+                screenShake = 16;
+                playSfx('overdrive');
+                vip.invulnTimer = 1.2;
+
+                shockwaves.push({ x: vip.x, y: vip.y, r: 15, maxR: Math.max(arenaWidth, arenaHeight), color: '#c084fc', alpha: 1.0 });
+                shockwaves.push({ x: vip.x, y: vip.y, r: 5, maxR: Math.max(arenaWidth, arenaHeight) * 0.8, color: '#38bdf8', alpha: 0.9 });
+                enemyProjectiles = [];
+
+                for (let i = enemies.length - 1; i >= 0; i--) {
+                    const e = enemies[i];
+                    const dmg = e.isBoss ? 480 : 9999;
+                    e.hp -= dmg;
+                    spawnParticles(e.x, e.y, e.color, 14);
+                    if (e.hp <= 0) {
+                        handleEnemyDeath(e, i);
+                    } else {
+                        addFloatingText(e.x, e.y - 16, `-${dmg}`, '#c084fc');
+                    }
+                }
+                addFloatingText(vip.x, vip.y - 36, '💥 OVERDRIVE NOVA!', '#f43f5e');
+                updateUI();
+            }
+
+            function spawnEnemy(forceBoss = false) {
+                const cfg = LEVEL_CONFIGS[currentLevel - 1] || LEVEL_CONFIGS[0];
+                const x = arenaWidth + 24;
+                const y = 32 + Math.random() * Math.max(40, arenaHeight - 64);
+
+                const roll = Math.random();
+                let type = 'normal';
+                let hp = 28 * cfg.hpMult;
+                let speed = (48 + Math.random() * 14) * cfg.spdMult;
+                let radius = 13;
+                let color = '#fb7185';
+                let reward = 8 + currentLevel;
+                let shootTimer = 999;
+
+                if (forceBoss) {
+                    type = 'boss';
+                    hp = 520 * cfg.hpMult;
+                    speed = 28 * Math.min(1.25, cfg.spdMult);
+                    radius = 28;
+                    color = '#f43f5e';
+                    reward = 90 + currentLevel * 15;
+                    shootTimer = 1.8;
+                } else if (cfg.allowShooter && roll > 0.78) {
+                    type = 'shooter';
+                    hp = 38 * cfg.hpMult;
+                    speed = 38 * cfg.spdMult;
+                    radius = 15;
+                    color = '#c084fc';
+                    reward = 14 + currentLevel;
+                    shootTimer = 2.0;
+                } else if (cfg.allowDasher && roll > 0.52) {
+                    type = 'dasher';
+                    hp = 22 * cfg.hpMult;
+                    speed = 82 * cfg.spdMult;
+                    radius = 11;
+                    color = '#fb923c';
+                    reward = 11 + currentLevel;
+                }
+
+                enemies.push({
+                    type, x, y, hp, maxHp: hp, speed, radius, color, reward,
+                    isBoss: forceBoss,
+                    slowTimer: 0,
+                    burnTimer: 0,
+                    shootTimer: shootTimer,
+                    rot: 0
+                });
+            }
+
+            function handleEnemyDeath(e, index) {
+                enemies.splice(index, 1);
+                kills += 1;
+                levelKills += 1;
+                comboCount += 1;
+                comboTimer = 3.0;
+                if (comboCount > maxCombo) maxCombo = comboCount;
+
+                overdriveCharge = Math.min(100, overdriveCharge + (e.isBoss ? 40 : 6));
+                spawnParticles(e.x, e.y, e.color, e.isBoss ? 32 : 10);
+
+                const dropVal = isFeverTime ? e.reward * 2 : e.reward;
+                gems.push({ x: e.x, y: e.y, val: dropVal });
+
+                const cfg = LEVEL_CONFIGS[currentLevel - 1];
+                if (cfg && levelKills >= cfg.goalKills && currentLevel < 10) {
+                    currentLevel += 1;
+                    levelKills = 0;
+                    bossSpawnedInLevel = false;
+                    const nextCfg = LEVEL_CONFIGS[currentLevel - 1];
+                    coins += cfg.reward;
+                    vip.hp = Math.min(vip.maxHp, vip.hp + 25);
+                    playSfx('upgrade');
+                    shockwaves.push({ x: vip.x, y: vip.y, r: 10, maxR: 180, color: '#34d399', alpha: 0.9 });
+                    addFloatingText(vip.x, vip.y - 34, `🎉 LEVEL ${currentLevel} 돌파! (+${cfg.reward}💰)`, '#34d399');
+                    if (nextCfg.allowBoss && !bossSpawnedInLevel) {
+                        spawnEnemy(true);
+                        bossSpawnedInLevel = true;
+                    }
+                }
+            }
+
+            function spawnParticles(x, y, color, count) {
+                for (let i = 0; i < count; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const spd = 40 + Math.random() * 140;
+                    particles.push({
+                        x, y,
+                        vx: Math.cos(angle) * spd,
+                        vy: Math.sin(angle) * spd,
+                        life: 0.4 + Math.random() * 0.25,
+                        maxLife: 0.65,
+                        color,
+                        size: 2 + Math.random() * 2.5
+                    });
+                }
+            }
+
+            function addFloatingText(x, y, text, color) {
+                floatingTexts.push({ x, y, text, color, life: 0.8 });
+            }
+
+            // ==========================================
+            // 9. 메인 게임 로직 업데이트
+            // ==========================================
+            function updateLogic(dt) {
+                if (isModalPaused) return;
+
+                elapsedTime += dt;
+                if (screenShake > 0) screenShake = Math.max(0, screenShake - dt * 35);
+
+                if (comboTimer > 0) {
+                    comboTimer -= dt;
+                    if (comboTimer <= 0) comboCount = 0;
+                }
+
+                const cycleSec = Math.floor(elapsedTime) % 45;
+                if (cycleSec === 35 && !isFeverTime) {
+                    isFeverTime = true;
+                    feverTimer = 10;
+                    feverBadge.classList.remove('hidden');
+                    addFloatingText(arenaWidth / 2, 55, '🔥 OVERHEAT! 크레딧 2배!', '#fb7185');
+                }
+                if (isFeverTime) {
+                    feverTimer -= dt;
+                    if (feverTimer <= 0) {
+                        isFeverTime = false;
+                        feverBadge.classList.add('hidden');
+                    }
+                }
+
+                let moveX = 0;
+                let moveY = 0;
+                if (keys['ArrowUp'] || keys['KeyW']) moveY -= 1;
+                if (keys['ArrowDown'] || keys['KeyS']) moveY += 1;
+                if (keys['ArrowLeft'] || keys['KeyA']) moveX -= 1;
+                if (keys['ArrowRight'] || keys['KeyD']) moveX += 1;
+
+                if (Math.abs(joyInput.x) > 0.05 || Math.abs(joyInput.y) > 0.05) {
+                    moveX = joyInput.x;
+                    moveY = joyInput.y;
+                }
+
+                const len = Math.hypot(moveX, moveY);
+                if (len > 0) {
+                    moveX /= Math.max(1, len);
+                    moveY /= Math.max(1, len);
+                    vip.dashDirX = moveX;
+                    vip.dashDirY = moveY;
+                }
+
+                if (vip.dashCooldown > 0) vip.dashCooldown = Math.max(0, vip.dashCooldown - dt);
+                if (vip.invulnTimer > 0) vip.invulnTimer = Math.max(0, vip.invulnTimer - dt);
+
+                let currentMoveSpeed = vip.speed;
+                if (vip.dashTimer > 0) {
+                    vip.dashTimer -= dt;
+                    currentMoveSpeed = vip.speed * 2.8;
+                    vip.trails.push({ x: vip.x, y: vip.y, alpha: 0.65 });
+                } else if (len > 0 && Math.random() < 0.35) {
+                    vip.trails.push({ x: vip.x, y: vip.y, alpha: 0.4 });
+                }
+
+                vip.x = Math.max(vip.radius + 6, Math.min(arenaWidth - vip.radius - 6, vip.x + moveX * currentMoveSpeed * dt));
+                vip.y = Math.max(vip.radius + 6, Math.min(arenaHeight - vip.radius - 6, vip.y + moveY * currentMoveSpeed * dt));
+
+                for (let i = vip.trails.length - 1; i >= 0; i--) {
+                    vip.trails[i].alpha -= dt * 2.5;
+                    if (vip.trails[i].alpha <= 0) vip.trails.splice(i, 1);
+                }
+
+                // VIP 근접 자동 참격
+                if (vip.slashTimer > 0) vip.slashTimer = Math.max(0, vip.slashTimer - dt);
+                vip.slashCooldown -= dt;
+                if (vip.slashCooldown <= 0) {
+                    const slashRange = 76;
+                    const closeEnemies = enemies.filter(e => Math.hypot(e.x - vip.x, e.y - vip.y) <= slashRange + e.radius);
+                    if (closeEnemies.length > 0) {
+                        vip.slashCooldown = 0.42;
+                        vip.slashTimer = 0.22;
+                        playSfx('slash');
+                        closeEnemies.forEach(e => {
+                            const slashDmg = 36 + currentLevel * 6;
+                            e.hp -= slashDmg;
+                            e.x = Math.min(arenaWidth + 15, e.x + 22);
+                            addFloatingText(e.x, e.y - 14, `⚔️-${slashDmg}`, '#7dd3fc');
+                            spawnParticles(e.x, e.y, '#38bdf8', 6);
+                        });
+                        for (let i = enemies.length - 1; i >= 0; i--) {
+                            if (enemies[i].hp <= 0) handleEnemyDeath(enemies[i], i);
+                        }
+                    }
+                }
+
+                // VIP 보유 총기 자동 사격
+                vip.gunTimer -= dt;
+                if (vip.gunTimer <= 0 && enemies.length > 0) {
+                    let target = null;
+                    let minDist = 420;
+                    for (const e of enemies) {
+                        const d = Math.hypot(e.x - vip.x, e.y - vip.y);
+                        if (d < minDist) {
+                            minDist = d;
+                            target = e;
+                        }
+                    }
+                    if (target) {
+                        vip.gunTimer = vip.gun.rate;
+                        const baseAngle = Math.atan2(target.y - vip.y, target.x - vip.x);
+                        for (let p = 0; p < vip.gun.count; p++) {
+                            const offset = (p - (vip.gun.count - 1) / 2) * vip.gun.spread;
+                            const ang = baseAngle + offset;
+                            projectiles.push({
+                                x: vip.x + 12,
+                                y: vip.y,
+                                vx: Math.cos(ang) * vip.gun.speed,
+                                vy: Math.sin(ang) * vip.gun.speed,
+                                damage: vip.gun.damage,
+                                color: vip.gun.color,
+                                size: vip.gun.size,
+                                effect: vip.gun.splash > 0 ? 'splash' : (vip.gun.pierce > 1 ? 'pierce' : 'none'),
+                                pierce: vip.gun.pierce,
+                                life: 1.2
+                            });
+                        }
+                        playSfx('shoot');
+                    }
+                }
+
+                // 경호원 공전 위치 및 자동 공격
+                synergyActive = false;
+                if (guards.length === 2) {
+                    const distBetween = Math.hypot(guards[0].x - guards[1].x, guards[0].y - guards[1].y);
+                    if (distBetween <= 82) synergyActive = true;
+                }
+                synergyBadge.classList.toggle('hidden', !synergyActive);
+
+                guards.forEach((g, idx) => {
+                    const orbitAngle = elapsedTime * 2.4 + idx * Math.PI;
+                    const targetX = vip.x + Math.cos(orbitAngle) * 34;
+                    const targetY = vip.y + Math.sin(orbitAngle) * 34;
+                    g.x += (targetX - g.x) * Math.min(1, dt * 10);
+                    g.y += (targetY - g.y) * Math.min(1, dt * 10);
+
+                    if (g.reloadTimer > 0) {
+                        g.reloadTimer -= dt;
+                        if (g.reloadTimer <= 0) g.ammo = g.magSize;
+                        return;
+                    }
+
+                    g.fireTimer -= dt;
+                    if (g.fireTimer <= 0 && enemies.length > 0) {
+                        let target = null;
+                        let bestDist = g.range;
+                        for (const e of enemies) {
+                            const d = Math.hypot(e.x - g.x, e.y - g.y);
+                            if (d < bestDist) {
+                                bestDist = d;
+                                target = e;
+                            }
+                        }
+
+                        if (target) {
+                            g.fireTimer = synergyActive ? g.fireRate * 0.78 : g.fireRate;
+                            g.ammo -= 1;
+                            if (g.ammo <= 0) g.reloadTimer = g.reloadTime;
+
+                            const baseAngle = Math.atan2(target.y - g.y, target.x - g.x);
+                            for (let p = 0; p < g.projCount; p++) {
+                                const offset = (p - (g.projCount - 1) / 2) * g.spread;
+                                const ang = baseAngle + offset;
+                                projectiles.push({
+                                    x: g.x,
+                                    y: g.y,
+                                    vx: Math.cos(ang) * g.speed,
+                                    vy: Math.sin(ang) * g.speed,
+                                    damage: synergyActive ? Math.round(g.damage * 1.25) : g.damage,
+                                    color: g.color,
+                                    size: g.projSize,
+                                    effect: g.effect,
+                                    pierce: g.effect === 'pierce' ? 3 : 1,
+                                    life: 1.2
+                                });
+                            }
+                        }
+                    }
+                });
+
+                // 아군 투사체 이동 및 충돌
+                for (let i = projectiles.length - 1; i >= 0; i--) {
+                    const p = projectiles[i];
+                    p.x += p.vx * dt;
+                    p.y += p.vy * dt;
+                    p.life -= dt;
+
+                    if (p.life <= 0 || p.x > arenaWidth + 40 || p.x < -30 || p.y < -30 || p.y > arenaHeight + 30) {
+                        projectiles.splice(i, 1);
+                        continue;
+                    }
+
+                    for (let j = enemies.length - 1; j >= 0; j--) {
+                        const e = enemies[j];
+                        if (Math.hypot(p.x - e.x, p.y - e.y) <= p.size + e.radius) {
+                            e.hp -= p.damage;
+                            addFloatingText(e.x, e.y - 10, `-${p.damage}`, p.color);
+
+                            if (p.effect === 'slow') e.slowTimer = 2.0;
+                            if (p.effect === 'burn') e.burnTimer = 2.5;
+                            if (p.effect === 'leech') vip.hp = Math.min(vip.maxHp, vip.hp + 1);
+                            if (p.effect === 'splash') {
+                                shockwaves.push({ x: p.x, y: p.y, r: 6, maxR: 52, color: p.color, alpha: 0.7 });
+                                enemies.forEach(other => {
+                                    if (other !== e && Math.hypot(other.x - p.x, other.y - p.y) <= 52) {
+                                        other.hp -= Math.round(p.damage * 0.55);
+                                    }
+                                });
+                            }
+
+                            p.pierce -= 1;
+                            if (p.pierce <= 0) {
+                                projectiles.splice(i, 1);
+                            }
+
+                            for (let k = enemies.length - 1; k >= 0; k--) {
+                                if (enemies[k].hp <= 0) handleEnemyDeath(enemies[k], k);
+                            }
+                            break;
+                        }
+                    }
+                }
+
+                // 적 스폰 (우측 라인)
+                const cfg = LEVEL_CONFIGS[currentLevel - 1] || LEVEL_CONFIGS[0];
+                enemySpawnTimer -= dt;
+                if (enemySpawnTimer <= 0) {
+                    enemySpawnTimer = isFeverTime ? cfg.spawnInterval * 0.78 : cfg.spawnInterval;
+                    spawnEnemy(false);
+                }
+
+                // 적 이동 (좌측으로 전진하며 VIP 추적) & 충돌
+                for (let i = enemies.length - 1; i >= 0; i--) {
+                    const e = enemies[i];
+                    e.rot += dt * 2.2;
+
+                    if (e.burnTimer > 0) {
+                        e.burnTimer -= dt;
+                        e.hp -= (8 + currentLevel * 2) * dt;
+                        if (e.hp <= 0) {
+                            handleEnemyDeath(e, i);
+                            continue;
+                        }
+                    }
+
+                    const spdFactor = e.slowTimer > 0 ? 0.55 : 1.0;
+                    if (e.slowTimer > 0) e.slowTimer -= dt;
+
+                    const angleToVip = Math.atan2(vip.y - e.y, vip.x - e.x);
+                    const vx = (-0.68 + Math.cos(angleToVip) * 0.38) * e.speed * spdFactor;
+                    const vy = Math.sin(angleToVip) * 0.65 * e.speed * spdFactor;
+                    e.x += vx * dt;
+                    e.y = Math.max(18, Math.min(arenaHeight - 18, e.y + vy * dt));
+
+                    if ((e.type === 'shooter' || e.isBoss) && e.x < arenaWidth - 20) {
+                        e.shootTimer -= dt;
+                        if (e.shootTimer <= 0) {
+                            e.shootTimer = e.isBoss ? 1.7 : 2.5;
+                            const shotAng = Math.atan2(vip.y - e.y, vip.x - e.x);
+                            enemyProjectiles.push({
+                                x: e.x, y: e.y,
+                                vx: Math.cos(shotAng) * (165 + currentLevel * 8),
+                                vy: Math.sin(shotAng) * (165 + currentLevel * 8),
+                                damage: Math.round(10 * cfg.dmgMult),
+                                radius: e.isBoss ? 6 : 4.5,
+                                color: '#f43f5e'
+                            });
+                        }
+                    }
+
+                    if (e.x < -16) {
+                        enemies.splice(i, 1);
+                        if (vip.invulnTimer <= 0) {
+                            const breachDmg = Math.round(8 * cfg.dmgMult);
+                            vip.hp = Math.max(0, vip.hp - breachDmg);
+                            vip.invulnTimer = 0.5;
+                            screenShake = 6;
+                            playSfx('hit');
+                            addFloatingText(vip.x, vip.y - 20, `방어선 돌파 -${breachDmg}`, '#f43f5e');
+                        }
+                        continue;
+                    }
+
+                    if (Math.hypot(e.x - vip.x, e.y - vip.y) <= e.radius + vip.radius - 3) {
+                        if (vip.invulnTimer <= 0) {
+                            const contactDmg = Math.round((e.isBoss ? 18 : 10) * cfg.dmgMult);
+                            vip.hp = Math.max(0, vip.hp - contactDmg);
+                            vip.invulnTimer = 0.65;
+                            screenShake = 8;
+                            playSfx('hit');
+                            addFloatingText(vip.x, vip.y - 22, `-${contactDmg}`, '#f43f5e');
+                        }
+                    }
+                }
+
+                // 적 투사체 이동 및 피격
+                for (let i = enemyProjectiles.length - 1; i >= 0; i--) {
+                    const ep = enemyProjectiles[i];
+                    ep.x += ep.vx * dt;
+                    ep.y += ep.vy * dt;
+
+                    if (ep.x < -20 || ep.x > arenaWidth + 20 || ep.y < -20 || ep.y > arenaHeight + 20) {
+                        enemyProjectiles.splice(i, 1);
+                        continue;
+                    }
+
+                    if (Math.hypot(ep.x - vip.x, ep.y - vip.y) <= ep.radius + vip.radius - 2) {
+                        enemyProjectiles.splice(i, 1);
+                        if (vip.invulnTimer <= 0) {
+                            vip.hp = Math.max(0, vip.hp - ep.damage);
+                            vip.invulnTimer = 0.55;
+                            screenShake = 7;
+                            playSfx('hit');
+                            addFloatingText(vip.x, vip.y - 20, `-${ep.damage}`, '#f43f5e');
+                        }
+                    }
+                }
+
+                // 크레딧 젬 자석 흡수
+                const magnetRange = customProfile.trait === 'magnet' ? 145 : 90;
+                for (let i = gems.length - 1; i >= 0; i--) {
+                    const g = gems[i];
+                    const d = Math.hypot(vip.x - g.x, vip.y - g.y);
+                    if (d <= magnetRange) {
+                        const pullAng = Math.atan2(vip.y - g.y, vip.x - g.x);
+                        g.x += Math.cos(pullAng) * 320 * dt;
+                        g.y += Math.sin(pullAng) * 320 * dt;
+                    }
+                    if (d <= vip.radius + 10) {
+                        coins += g.val;
+                        gems.splice(i, 1);
+                        playSfx('coin');
+                    }
+                }
+
+                // 파티클, 충격파, 플로팅 텍스트 업데이트
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    const p = particles[i];
+                    p.x += p.vx * dt;
+                    p.y += p.vy * dt;
+                    p.life -= dt;
+                    if (p.life <= 0) particles.splice(i, 1);
+                }
+
+                for (let i = shockwaves.length - 1; i >= 0; i--) {
+                    const sw = shockwaves[i];
+                    sw.r += (sw.maxR - sw.r) * Math.min(1, dt * 8);
+                    sw.alpha -= dt * 1.6;
+                    if (sw.alpha <= 0) shockwaves.splice(i, 1);
+                }
+
+                for (let i = floatingTexts.length - 1; i >= 0; i--) {
+                    const ft = floatingTexts[i];
+                    ft.y -= 28 * dt;
+                    ft.life -= dt;
+                    if (ft.life <= 0) floatingTexts.splice(i, 1);
+                }
+
+                if (vip.hp <= 0) {
+                    returnToHomeWithReport(false);
+                    return;
+                }
+
+                updateUI();
+            }
+
+            // ==========================================
+            // 10. 전장 렌더링
+            // ==========================================
+            function drawArena() {
+                ctx.save();
+                if (screenShake > 0) {
+                    ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake);
+                }
+
+                ctx.fillStyle = '#050811';
+                ctx.fillRect(0, 0, arenaWidth, arenaHeight);
+
+                ctx.strokeStyle = 'rgba(56, 189, 248, 0.06)';
+                ctx.lineWidth = 1;
+                for (let gx = 0; gx < arenaWidth; gx += 32) {
+                    ctx.beginPath();
+                    ctx.moveTo(gx, 0);
+                    ctx.lineTo(gx, arenaHeight);
+                    ctx.stroke();
+                }
+                for (let gy = 0; gy < arenaHeight; gy += 32) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, gy);
+                    ctx.lineTo(arenaWidth, gy);
+                    ctx.stroke();
+                }
+
+                ctx.fillStyle = 'rgba(244, 63, 94, 0.08)';
+                ctx.fillRect(arenaWidth - 18, 0, 18, arenaHeight);
+                ctx.fillStyle = 'rgba(244, 63, 94, 0.45)';
+                ctx.font = 'bold 10px Orbitron';
+                ctx.textAlign = 'right';
+                ctx.fillText('◀ INCOMING LANE', arenaWidth - 8, 16);
+
+                shockwaves.forEach(sw => {
+                    ctx.save();
+                    ctx.strokeStyle = sw.color;
+                    ctx.globalAlpha = Math.max(0, sw.alpha);
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(sw.x, sw.y, sw.r, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.restore();
+                });
+
+                gems.forEach(g => {
+                    ctx.save();
+                    ctx.fillStyle = '#facc15';
+                    ctx.shadowColor = '#facc15';
+                    ctx.shadowBlur = 8;
+                    ctx.beginPath();
+                    ctx.arc(g.x, g.y, 4.5, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                });
+
+                if (guards.length === 2 && synergyActive) {
+                    ctx.save();
+                    ctx.strokeStyle = '#facc15';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([4, 4]);
+                    ctx.beginPath();
+                    ctx.moveTo(guards[0].x, guards[0].y);
+                    ctx.lineTo(guards[1].x, guards[1].y);
+                    ctx.stroke();
+                    ctx.restore();
+                }
+
+                guards.forEach(g => {
+                    ctx.save();
+                    if (g.star >= 3) {
+                        ctx.strokeStyle = '#facc15';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.arc(g.x, g.y, 17 + Math.sin(elapsedTime * 8) * 2, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
+                    ctx.fillStyle = '#0f172a';
+                    ctx.strokeStyle = g.color;
+                    ctx.lineWidth = 2.2;
+                    ctx.beginPath();
+                    ctx.arc(g.x, g.y, 13, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    ctx.font = '13px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(g.icon, g.x, g.y);
+
+                    if (g.reloadTimer > 0) {
+                        ctx.fillStyle = '#94a3b8';
+                        ctx.font = 'bold 8px Orbitron';
+                        ctx.fillText('RELOAD', g.x, g.y - 18);
+                    }
+                    ctx.restore();
+                });
+
+                vip.trails.forEach(t => {
+                    ctx.save();
+                    ctx.globalAlpha = t.alpha * 0.5;
+                    ctx.fillStyle = customProfile.trailStyle === 'flame' ? '#fb923c' : (customProfile.trailStyle === 'spark' ? '#facc15' : customProfile.color);
+                    ctx.beginPath();
+                    ctx.arc(t.x, t.y, 12, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                });
+
+                if (vip.slashTimer > 0) {
+                    ctx.save();
+                    ctx.strokeStyle = '#38bdf8';
+                    ctx.shadowColor = '#38bdf8';
+                    ctx.shadowBlur = 14;
+                    ctx.lineWidth = 5;
+                    ctx.beginPath();
+                    ctx.arc(vip.x, vip.y, 58, -Math.PI * 0.45, Math.PI * 0.45);
+                    ctx.stroke();
+                    ctx.restore();
+                }
+
+                if (vip.invulnTimer <= 0 || Math.floor(elapsedTime * 18) % 2 === 0) {
+                    drawCustomVipBody(ctx, vip.x, vip.y, vip.radius, customProfile, elapsedTime, vip.slashTimer > 0 ? 1 : 0);
+                }
+
+                ctx.save();
+                ctx.fillStyle = '#e0f2fe';
+                ctx.font = 'bold 10px Noto Sans KR';
+                ctx.textAlign = 'center';
+                ctx.fillText(customProfile.name, vip.x, vip.y - 24);
+                ctx.restore();
+
+                enemies.forEach(e => {
+                    ctx.save();
+                    ctx.translate(e.x, e.y);
+                    ctx.fillStyle = e.color;
+                    ctx.strokeStyle = '#0f172a';
+                    ctx.lineWidth = 2;
+
+                    ctx.save();
+                    ctx.rotate(e.rot);
+                    ctx.beginPath();
+                    if (e.isBoss) {
+                        for (let s = 0; s < 6; s++) {
+                            const a = (Math.PI * 2 * s) / 6;
+                            if (s === 0) ctx.moveTo(Math.cos(a) * e.radius, Math.sin(a) * e.radius);
+                            else ctx.lineTo(Math.cos(a) * e.radius, Math.sin(a) * e.radius);
+                        }
+                        ctx.closePath();
+                    } else if (e.type === 'dasher') {
+                        ctx.moveTo(-e.radius, 0);
+                        ctx.lineTo(e.radius, -e.radius * 0.85);
+                        ctx.lineTo(e.radius, e.radius * 0.85);
+                        ctx.closePath();
+                    } else if (e.type === 'shooter') {
+                        ctx.moveTo(0, -e.radius);
+                        ctx.lineTo(e.radius, 0);
+                        ctx.lineTo(0, e.radius);
+                        ctx.lineTo(-e.radius, 0);
+                        ctx.closePath();
+                    } else {
+                        ctx.rect(-e.radius * 0.85, -e.radius * 0.85, e.radius * 1.7, e.radius * 1.7);
+                    }
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.restore();
+
+                    if (e.hp < e.maxHp) {
+                        const bw = e.radius * 2;
+                        ctx.fillStyle = '#0f172a';
+                        ctx.fillRect(-bw / 2, -e.radius - 8, bw, 3.5);
+                        ctx.fillStyle = '#34d399';
+                        ctx.fillRect(-bw / 2, -e.radius - 8, bw * Math.max(0, e.hp / e.maxHp), 3.5);
+                    }
+                    ctx.restore();
+                });
+
+                projectiles.forEach(p => {
+                    ctx.save();
+                    ctx.fillStyle = p.color;
+                    ctx.shadowColor = p.color;
+                    ctx.shadowBlur = 8;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                });
+
+                enemyProjectiles.forEach(ep => {
+                    ctx.save();
+                    ctx.fillStyle = ep.color;
+                    ctx.beginPath();
+                    ctx.arc(ep.x, ep.y, ep.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                });
+
+                particles.forEach(p => {
+                    ctx.save();
+                    ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                });
+
+                floatingTexts.forEach(ft => {
+                    ctx.save();
+                    ctx.globalAlpha = Math.min(1, ft.life * 1.4);
+                    ctx.fillStyle = ft.color;
+                    ctx.font = 'bold 11px Orbitron, Noto Sans KR';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(ft.text, ft.x, ft.y);
+                    ctx.restore();
+                });
+
+                ctx.restore();
+            }
+
+            // ==========================================
+            // 11. UI 동기화 및 화면 전환
+            // ==========================================
+            function formatTime(sec) {
+                const m = Math.floor(sec / 60);
+                const s = Math.floor(sec % 60);
+                return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+            }
+
+            function updateUI() {
+                if (hudVipName) hudVipName.textContent = `👑 ${customProfile.name}`;
+                if (hpText) hpText.textContent = `${Math.ceil(vip.hp)}/${vip.maxHp}`;
+                if (hpBar) hpBar.style.width = `${Math.max(0, (vip.hp / vip.maxHp) * 100)}%`;
+
+                const cfg = LEVEL_CONFIGS[currentLevel - 1] || LEVEL_CONFIGS[0];
+                if (hudLevelBadge) {
+                    hudLevelBadge.textContent = `LV.${String(currentLevel).padStart(2, '0')}`;
+                    hudLevelBadge.className = `text-[10px] font-orbitron font-black px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 ${cfg.color}`;
+                }
+                if (levelProgressBar) {
+                    const pct = currentLevel >= 10 ? 100 : Math.min(100, (levelKills / cfg.goalKills) * 100);
+                    levelProgressBar.style.width = `${pct}%`;
+                }
+
+                if (timerDisplay) timerDisplay.textContent = formatTime(elapsedTime);
+                if (comboDisplay) comboDisplay.textContent = `COMBO x${comboCount}`;
+                if (coinDisplay) coinDisplay.textContent = coins;
+                if (slotCountText) slotCountText.textContent = guards.length;
+                if (vipWeaponBadge) vipWeaponBadge.textContent = `${vip.gun.icon} ${vip.gun.name}`;
+
+                if (summonCostText) summonCostText.textContent = summonCost;
+                if (summonBtn) summonBtn.disabled = coins < summonCost;
+                if (gunCostText) gunCostText.textContent = gunDrawCost;
+                if (gunDrawBtn) gunDrawBtn.disabled = coins < gunDrawCost;
+
+                if (overdriveFill) overdriveFill.style.height = `${overdriveCharge}%`;
+                if (overdriveText) overdriveText.textContent = `${Math.floor(overdriveCharge)}%`;
+                if (overdriveBtn) {
+                    overdriveBtn.disabled = overdriveCharge < 100;
+                    overdriveBtn.classList.toggle('overdrive-ready', overdriveCharge >= 100);
+                }
+
+                if (dashCooldownOverlay && dashStatusText) {
+                    if (vip.dashCooldown > 0) {
+                        const ratio = vip.dashCooldown / vip.dashMaxCooldown;
+                        dashCooldownOverlay.style.transform = `scaleY(${ratio})`;
+                        dashStatusText.textContent = `${vip.dashCooldown.toFixed(1)}s`;
+                    } else {
+                        dashCooldownOverlay.style.transform = 'scaleY(0)';
+                        dashStatusText.textContent = 'READY';
+                    }
+                }
+
+                for (let i = 0; i < 2; i++) {
+                    const slotEl = guardSlotEls[i];
+                    if (!slotEl) continue;
+                    const g = guards[i];
+                    if (!g) {
+                        slotEl.className = 'border-2 border-dashed border-slate-700 rounded-xl p-1.5 flex flex-col justify-center items-center bg-slate-900/60';
+                        slotEl.innerHTML = `<span class="text-[11px] text-slate-500 font-bold">+ 빈 슬롯</span>`;
+                    } else {
+                        const style = GRADE_STYLES[g.grade];
+                        const upCost = g.star === 1 ? 65 : 130;
+                        const canUp = g.star < 3 && coins >= upCost;
+                        slotEl.className = `border-2 rounded-xl p-1.5 flex flex-col justify-between ${style.class}`;
+                        slotEl.innerHTML = `
+                            <div class="flex items-center justify-between w-full">
+                                <span class="text-[9px] font-black px-1 rounded text-white ${style.badgeBg}">${g.grade} ★${g.star}</span>
+                                <span class="text-[8px] font-orbitron text-slate-400">${g.serial}</span>
+                            </div>
+                            <div class="text-[10px] font-black ${style.textClass} truncate w-full my-0.5">${g.icon} ${g.name}</div>
+                            ${g.star < 3
+                                ? `<button data-up-idx="${i}" ${!canUp ? 'disabled' : ''} class="upgrade-slot-btn w-full py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/40 disabled:opacity-40 border border-amber-400/50 text-[9px] font-black text-amber-300 cursor-pointer">
+                                    ★${g.star + 1} 강화 (💰${upCost})
+                                   </button>`
+                                : `<div class="w-full text-center text-[9px] font-black text-amber-300">✨ MAX 각성</div>`
+                            }
+                        `;
+                    }
+                }
+
+                document.querySelectorAll('.upgrade-slot-btn').forEach(btn => {
+                    btn.onclick = () => upgradeGuard(parseInt(btn.dataset.upIdx, 10));
+                });
+            }
+
+            let lastTimestamp = performance.now();
+            function gameLoop(timestamp) {
+                const dt = Math.min(0.05, (timestamp - lastTimestamp) / 1000);
+                lastTimestamp = timestamp;
+
+                if (isRunning) {
+                    updateLogic(dt);
+                    drawArena();
+                }
+                requestAnimationFrame(gameLoop);
+            }
+
+            function startGame() {
+                initAudio();
+                homeLobbyScreen.classList.add('hidden');
+                battleScreen.classList.remove('hidden');
+                resizeCanvas();
+
+                currentLevel = selectedStartLevel;
+                levelKills = 0;
+                bossSpawnedInLevel = false;
+
+                vip.x = Math.min(85, arenaWidth * 0.22);
+                vip.y = arenaHeight / 2;
+                vip.maxHp = customProfile.trait === 'tank' ? 135 : 100;
+                vip.hp = vip.maxHp;
+                vip.speed = customProfile.trait === 'athlete' ? 242 : 205;
+                vip.invulnTimer = 0;
+                vip.dashCooldown = 0;
+                vip.dashTimer = 0;
+                vip.slashTimer = 0;
+                vip.slashCooldown = 0.2;
+                vip.gun = VIP_GUN_POOL[0];
+                vip.gunTimer = 0.1;
+                vip.trails = [];
+
+                elapsedTime = 0;
+                kills = 0;
+                coins = customProfile.trait === 'rich' ? 120 : 80;
+                summonCost = 40;
+                gunDrawCost = 35;
+                comboCount = 0;
+                comboTimer = 0;
+                maxCombo = 0;
+                overdriveCharge = 0;
+                screenShake = 0;
+                isFeverTime = false;
+                synergyActive = false;
+
+                enemies = [];
+                projectiles = [];
+                enemyProjectiles = [];
+                gems = [];
+                particles = [];
+                floatingTexts = [];
+                shockwaves = [];
+                guards = [generateGuard()];
+
+                enemySpawnTimer = 0.4;
+                isRunning = true;
+                isModalPaused = false;
+                replaceModal.classList.add('hidden');
+                feverBadge.classList.add('hidden');
+
+                const startCfg = LEVEL_CONFIGS[currentLevel - 1];
+                if (startCfg && startCfg.allowBoss) {
+                    spawnEnemy(true);
+                    bossSpawnedInLevel = true;
+                }
+
+                lastTimestamp = performance.now();
+                updateUI();
+                savePlayerSaveData(false);
+            }
+
+            function returnToHomeWithReport(isVoluntary = false) {
+                isRunning = false;
+                isModalPaused = false;
+                replaceModal.classList.add('hidden');
+                if (!isVoluntary) playSfx('gameover');
+
+                if (elapsedTime > bestSurvivalSec) {
+                    bestSurvivalSec = elapsedTime;
+                }
+                if (currentLevel > bestLevelReached) {
+                    bestLevelReached = currentLevel;
+                }
+                lobbyBestTime.textContent = `${formatTime(bestSurvivalSec)} (LV.${bestLevelReached})`;
+
+                if (lastResultCard) {
+                    lastResultCard.classList.remove('hidden');
+                    if (finalLevelText) finalLevelText.textContent = `LV.${String(currentLevel).padStart(2, '0')}`;
+                    if (finalTimeText) finalTimeText.textContent = formatTime(elapsedTime);
+                    if (finalKillsText) finalKillsText.textContent = kills;
+                    if (finalComboText) finalComboText.textContent = `x${maxCombo}`;
+                }
+
+                battleScreen.classList.add('hidden');
+                homeLobbyScreen.classList.remove('hidden');
+                if (lobbyAnimId) cancelAnimationFrame(lobbyAnimId);
+                renderLobbyStage();
+                savePlayerSaveData(false);
+            }
+
+            startGameBtn.addEventListener('click', startGame);
+            saveProfileBtn.addEventListener('click', () => savePlayerSaveData(true));
+            summonBtn.addEventListener('click', triggerSummon);
+            gunDrawBtn.addEventListener('click', triggerGunDraw);
+            dashBtn.addEventListener('click', triggerDash);
+            overdriveBtn.addEventListener('click', triggerOverdrive);
+            soundToggleBtn.addEventListener('click', toggleSoundState);
+            lobbySoundBtn.addEventListener('click', toggleSoundState);
+            homeReturnBtn.addEventListener('click', () => returnToHomeWithReport(true));
+
+            // ==========================================
+            // 12. 스마트폰 PWA 앱 아이콘 & 설치 기능 초기화
+            // ==========================================
+            let deferredInstallPrompt = null;
+
+            function setupPwaAppIconAndManifest() {
+                try {
+                    const iconCanvas = document.createElement('canvas');
+                    iconCanvas.width = 512;
+                    iconCanvas.height = 512;
+                    const ictx = iconCanvas.getContext('2d');
+
+                    const grad = ictx.createLinearGradient(0, 0, 512, 512);
+                    grad.addColorStop(0, '#0ea5e9');
+                    grad.addColorStop(0.5, '#6366f1');
+                    grad.addColorStop(1, '#9333ea');
+                    ictx.fillStyle = grad;
+                    ictx.fillRect(0, 0, 512, 512);
+
+                    ictx.font = '260px sans-serif';
+                    ictx.textAlign = 'center';
+                    ictx.textBaseline = 'middle';
+                    ictx.fillText('👑', 256, 268);
+
+                    const iconDataUrl = iconCanvas.toDataURL('image/png');
+                    const appleLink = document.getElementById('appleTouchIconLink');
+                    if (appleLink) appleLink.href = iconDataUrl;
+
+                    const manifestObj = {
+                        name: 'VIP GUARDIAN: OVERDRIVE',
+                        short_name: 'VIP Guardian',
+                        start_url: '.',
+                        display: 'standalone',
+                        orientation: 'portrait',
+                        background_color: '#060913',
+                        theme_color: '#060913',
+                        icons: [
+                            { src: iconDataUrl, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+                        ]
+                    };
+                    const manifestBlob = new Blob([JSON.stringify(manifestObj)], { type: 'application/manifest+json' });
+                    const manifestUrl = URL.createObjectURL(manifestBlob);
+                    const manifestLink = document.getElementById('pwaManifestLink');
+                    if (manifestLink) manifestLink.href = manifestUrl;
+                } catch (e) {
+                    console.warn('PWA setup skipped:', e);
+                }
+            }
+
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredInstallPrompt = e;
+            });
+
+            if (installAppBtn) {
+                installAppBtn.addEventListener('click', async () => {
+                    if (deferredInstallPrompt) {
+                        deferredInstallPrompt.prompt();
+                        await deferredInstallPrompt.userChoice;
+                        deferredInstallPrompt = null;
+                    } else if (installGuideModal) {
+                        installGuideModal.classList.remove('hidden');
+                    }
+                });
+            }
+
+            if (closeInstallGuideBtn && installGuideModal) {
+                closeInstallGuideBtn.addEventListener('click', () => {
+                    installGuideModal.classList.add('hidden');
+                });
+            }
+
+            setupPwaAppIconAndManifest();
+            syncProfileUI();
+            initCloudStorage();
+            renderLobbyStage();
+            requestAnimationFrame(gameLoop);
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initGameApp);
+        } else {
+            initGameApp();
+        }
+    </script>
+</body>
+</html>
